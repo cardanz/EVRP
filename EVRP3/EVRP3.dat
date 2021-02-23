@@ -1,0 +1,27 @@
+//< StringID Type x y demand ReadyTime DueDate ServiceTime >
+Nodes = { // Type d=depot, f=station, c=customer
+<D0 d 40 50 0 0 1236 0>
+<S0 f 40 50 0 0 1236 0>
+<S1 f 73 52 0 0 1236 0>
+<S7 f 23 80 0 0 1236 0>
+<C12 c 25 85 20 176 228 90>
+<C17 c 18 75 20 633 711 90>
+<C19 c 15 80 10 455 513 90>
+<C77 c 88 30 10 534 600 90>
+<C80 c 85 25 10 637 689 90>
+<C81 c 85 35 30 761 823 90>
+};
+/*
+Q =79.69; //Battery capacity
+C =200.0; //Vehicle load capacity
+lcr = 0.05; // battery consumption rate for power kW/km*kg
+g = 3.39; // battery recharging rate min/kW
+*/
+K = 4; // number of vehicles
+
+/*
+Speeds = { // <speed batteryConsumptionRateForKm >
+< 40 0.2>
+< 60 0.5>
+< 70 0.8>
+};*/
