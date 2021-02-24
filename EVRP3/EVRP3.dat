@@ -11,15 +11,14 @@ Nodes = { // Type d=depot, f=station, c=customer
 <C80 c 85 25 10 637 689 90>
 <C81 c 85 35 30 761 823 90>
 };
-/*
-Q =79.69; //Battery capacity
-C =200.0; //Vehicle load capacity
-lcr = 0.05; // battery consumption rate for power kW/km*kg
-g = 3.39; // battery recharging rate min/kW
-*/
+
+C =200; //Vehicle load capacity
 K = 4; // number of vehicles
 
 /*
+Q =79.69; //Battery capacity
+lcr = 0.05; // battery consumption rate for power kW/km*kg
+g = 3.39; // battery recharging rate min/kW
 Speeds = { // <speed batteryConsumptionRateForKm >
 < 40 0.2>
 < 60 0.5>
