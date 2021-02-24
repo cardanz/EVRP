@@ -139,20 +139,31 @@ subject to
   }
   
   // Every customer has a successor node
-  forall(i in rangeN, k in rK){
+  forall(i in rangeNuF, k in rK){
       SuccNode: sum(j in rV: j!=0 && j!=i)(x[i][j][k]) == y[i][k];
   }
+  // 
+  forall(k in rK){
+      SuccLast: sum(j in rV)(x[v-1][j][k]) == 0;
+  }
   
-  // Flow continuity
-  forall(k in rK, i in rangeNuF){
-      FlowCont: sum(j in rV: i!=j && j!=0)x[i][j][k] - sum(j in rV: j!=i && j!=0)x[j][i][k] == 0;
+  
+  //flow continuity
+  forall(k in rK, j in rangeNuF){
+     // FlowCont: sum(j in rV: i!=j && j!=0)x[i][j][k] - sum(j in rV: j!=i && j!=0)x[j][i][k] == 0;
+     FlowCont: sum( i in rV : i != j && i != v-1)(x[i][j][k]) == (y[j][k]);
+     
   }
   
   //Eache station cloned visited at most once
   forall(j in rangeFfirst){
-      VisitClone: sum(k in rK)sum(i in rV: i!=j && i!=v-1)x[i][j][k] <=1;
-   
+      VisitClone: sum(k in rK)sum(i in rV: i!=j && i!=v-1)x[i][j][k] <=1; 
   }
+  
+  //Each station clone visited at most once
+  forall(j in rangeFfirst,k in rK){
+  visitStat2: sum(i in rV: i !=j && i != v-1)(x[i][j][k]) == sum(i in rV: i !=j && i != 0)(x[j][i][k]);
+  }  
   
   // Each vehicle leaves form depot only once
   forall(k in rK){
@@ -164,16 +175,20 @@ subject to
     Return: sum(j in rV: j!=0)x[0][j][k] - sum(i in rV: i!= v-1)x[i][v-1][k] == 0;
   }
   
-  // load on vehicles at arrival at a node lik <= C && load on vehicles at arrival at a node lik >= Li
-  forall(k in rK, i in rN){
+  /*// load on vehicles at arrival at a node lik <= C && load on vehicles at arrival at a node lik >= Li
+  forall(k in rK, i in rangeN){
   	upperBoundLoad:  l[i][k] <= C;
   	lowerBoundLoad: l[i][k] >= demand[i] * y[i][k];
   }
     
   // load constraints
-  //forall(k in rK, i in rV, j in rV: i!=j && i != v-1 && j != 0){
-  //		loadConstraints: l[j][k] <= l[i][k] - demand[i] * x[i][j][k] - C * (1-x[i][j][k]);
-  //} 
+  forall(k in rK, i in rangeN, j in rangeN: i!=j && demand[i] + demand[j] <= C){
+    	//l valore con cui entro in j con la macchina k, deve essere minore del valore con cui sono 
+    	//entrato i con la macchina k sottraendo la domanda di i se arco (i,j) visitato da k se  (i,j)non visitato 
+    	// ljk <= -200 + lik
+  		loadConstraints: l[j][k] <= l[i][k] - demand[i] * x[i][j][k] - C * (1-x[i][j][k]);
+  } 
+  */
 }
 
 
