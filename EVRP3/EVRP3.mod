@@ -1,4 +1,4 @@
-//definition of node
+// definition of node
 tuple Node {
   // StringID Type x y demand ReadyTime DueDate ServiceTime
   string StringID;
@@ -11,24 +11,30 @@ tuple Node {
   int ServiceTime;
 }
 {Node} Nodes = ...;
-//set of customers
+// set of customers
 {Node} N = {n | n in Nodes: n.Type == "c"};
 
-//depot
+// depot
 {Node}D = {n | n in Nodes: n.Type == "d"};
 
-//set of customers including depot
+// set of customers including depot
 {Node} N0 = {n | n in Nodes: n.Type == "d"} union {n | n in Nodes: n.Type == "c"};
 
-//set of recharging stations
+// set of recharging stations
 {Node} F = {n | n in Nodes: n.Type == "f"};
 
+// all the node ,depot, customer,station not F'
 int numero_nodi;
+// number of depots
 int d;
+// number of customers
 int c;
+//number of recharcing stations
 int f;
 
+// vehichle capacity
 int C = ...;
+// number of vehichles
 int K = ...;
 
 
@@ -46,33 +52,39 @@ range rK = 0..K-1;
 
 {Node} Fcloned;
 
-//add cloned station 
+// add cloned station 
+// s0 copy 1-4, s1 copy 1-4, s7 copy 1-4
 int numerocopiati = 0;
 execute{
-  for(var k in rK){
-    numerocopiati = numerocopiati + 1;
-	  for(var i in rF){
+  for( var i in rF){
+    numerocopiati = 0;
+	  for(var k in rK){
+	    numerocopiati = numerocopiati + 1;
 	    Opl.item(F, i).StringID = Opl.item(F, i).StringID.substring(0,3);
 	    Opl.item(F, i).StringID = Opl.item(F, i).StringID + " - copia " + numerocopiati;    
+	  	Fcloned.add(Opl.item(F, i));
 	  }
-  Fcloned.add(F);
   }  
 }
 
-//all the vertex
+// all the vertex
 {Node} V = {n | n in Nodes: n.Type == "d"} union {n | n in Nodes: n.Type == "c"};
 int v;
 execute{
+  // add all the clones
   V.add(Fcloned);
   
+  // add depot (n+1) in the last position return node
   Opl.item(D, 0).StringID = Opl.item(D, 0).StringID + "-{n+1}";
   V.add(D);
   
   v = V.size;
 }
 
+// depot (0) - customers(N) -  cloned stations (F') - depot(n+1)
 range rV = 0..v-1;
 
+// array element with all the demands for all nodes
 int demand[rV];
 execute{
  for(var i in rV){
@@ -93,85 +105,75 @@ execute{
 	}		     
 }
 
-
+int prova;
+execute{
+  prova = prova+1;
+}
 //-----------------------------------------
 
+// Xijk: for all i,j € V i != j , k € K 
 dvar boolean x[rV][rV][rK];
+// Yik: for all i € N, k € K
 dvar boolean y[rV][rK];
+// lik: for all i € N, k € K
 dvar float+ l[rV][rK];
+// objective function
 dvar float Obj;
-//per STE
 
+// customers position in V
+range rangeN = 1..c;
+// all the node without depots (0 && n+1)
+range rangeNuF = 1..v-2;
+// all the  cloned stations
+range rangeFfirst = c+1..v-2;
 
 minimize Obj;
 subject to
 {
   
-  Objective: Obj == sum(k in rK)sum(i in rV, j in rV: i!=j && i!=v-1 && j!=0)(dist[i][j]*x[i][j][k]);
+  Objective: Obj == sum(k in rK)sum(i in rV, j in rV: i!=j && i!=v-1 && j!=0)(dist[i][j] * x[i][j][k] + l[i][k]);
   
-  //Every customer assigned to a single vehicle
-  forall(i in rV){
-    if(i in 1..6){
+  // Every customer assigned to a single vehicle
+  forall(i in rangeN){
       VehAss: sum(k in rK)(y[i][k]) == 1;
-    }
   }
   
-  //Every customer has a successor node
-  forall(i in rV, k in rK){
-    if(i in 1..6){
+  // Every customer has a successor node
+  forall(i in rangeN, k in rK){
       SuccNode: sum(j in rV: j!=0 && j!=i)(x[i][j][k]) == y[i][k];
-    }
   }
   
-  //Flow continuity
-  forall(k in rK, i in rV){
-    if(i in 1..18){
+  // Flow continuity
+  forall(k in rK, i in rangeNuF){
       FlowCont: sum(j in rV: i!=j && j!=0)x[i][j][k] - sum(j in rV: j!=i && j!=0)x[j][i][k] == 0;
-    }
   }
   
   //Eache station cloned visited at most once
-  forall(j in rV){
-    if(j in 7..18){
+  forall(j in rangeFfirst){
       VisitClone: sum(k in rK)sum(i in rV: i!=j && i!=v-1)x[i][j][k] <=1;
-    }
+   
   }
   
-  //Each vehicle leaves form depot only once
+  // Each vehicle leaves form depot only once
   forall(k in rK){
     LeaveDepot: sum(j in rV: j!=0)x[0][j][k] <=1;
   }
   
-   //if a vehicle leaves the depot it must return
+   // if a vehicle leaves the depot it must return
   forall(k in rK){
     Return: sum(j in rV: j!=0)x[0][j][k] - sum(i in rV: i!= v-1)x[i][v-1][k] == 0;
   }
   
-  //load on vehicles at arrival at a node lik <= C
-  forall(k in rK, i in rV){
-  	if(i in 1..6){
+  // load on vehicles at arrival at a node lik <= C && load on vehicles at arrival at a node lik >= Li
+  forall(k in rK, i in rN){
   	upperBoundLoad:  l[i][k] <= C;
-  	}
+  	lowerBoundLoad: l[i][k] >= demand[i] * y[i][k];
   }
-  
-  //load on vehicles at arrival at a node lik >= Li
-  forall(k in rK, i in rV){
-  	if(i in 1..6){
-  	lowerBoundLoad: l[i][k] >= demand[i];
-  	}
-  }
-  
-  //load constraints
-  forall(k in rK, i in rV, j in rV){
-  	if(i!=j && i != v-1 && j != 0){
-  		loadConstraints: l[j][k] <= l[i][k] - demand[i]*x[i][j][k] - C*(1-x[i][j][k]);
-  	}	
-  }
-
-  //Subtour elimination;
- // forall(i in NodesP, j in NodesP, v in rK: i!=j && Q[i]+Q[j]<=VCap[v])  
- // SE: U[i][v] - U[j][v] + VCap[v] * x[i][j][v] <= VCap[v] -Q[j];
- 
+    
+  // load constraints
+  //forall(k in rK, i in rV, j in rV: i!=j && i != v-1 && j != 0){
+  //		loadConstraints: l[j][k] <= l[i][k] - demand[i] * x[i][j][k] - C * (1-x[i][j][k]);
+  //} 
 }
 
 
