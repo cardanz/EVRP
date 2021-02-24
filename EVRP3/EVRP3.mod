@@ -131,7 +131,7 @@ minimize Obj;
 subject to
 {
   
-  Objective: Obj == sum(k in rK)sum(i in rV, j in rV: i!=j && i!=v-1 && j!=0)(dist[i][j] * x[i][j][k] + l[i][k]);
+  Objective: Obj == sum(k in rK)sum(i in rV, j in rV: i!=j && i!=v-1 && j!=0)(dist[i][j] * x[i][j][k]);
   
   // Every customer assigned to a single vehicle
   forall(i in rangeN){
