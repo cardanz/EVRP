@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ASCII"?><project>
+	<version>1.0</version>
+	<configs>
+		<config default="true" name="Configuration1" category="opl">
+			<ref name="EVRP4.mod" type="model">
+			</ref>
+			<ref name="EVRP4.ops" type="setting">
+			</ref>
+			<ref name="EVRP4.dat" type="data">
+			</ref>
+		</config>
+	</configs>
+	
+</project>
