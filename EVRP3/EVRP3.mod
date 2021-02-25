@@ -106,7 +106,7 @@ execute{
 
 //dist matrix
 float Dist[rV][rV];
-float maxx = 100000.0;
+float maxx = 100000;
 execute{
   for(var i in rV){
 	  for(var j in rV){
@@ -128,7 +128,7 @@ execute{
 //-----------------------------------------
 
 // number of nodes without depot 
-range NodesP = 1..v-1;
+range NodesN0 = 0..c;
 
 // number of node without depot or n+1
 range NodesD = 1..v-2;
@@ -159,12 +159,14 @@ float M[rV][rV];
 execute{
   for(var i in rV){
 	  for(var j in rV){
-	    M[i][j] = 0;
-	    if(dueDate[i] + serviceTime[i] + Dist[i][j]/speeds - readyTime[j] > 0){
-	      M[i][j] = dueDate[i] + serviceTime[i] + Dist[i][j]/speeds - readyTime[j];
-	      }
+	    if(i != v-1 && j != 0 && i != j){
+	    	M[i][j] = 0;
+	    	if(dueDate[i] + serviceTime[i] + Dist[i][j]/speeds - readyTime[j] > 0 && Dist[i][j] != 0){
+	      		M[i][j] = dueDate[i] + serviceTime[i] + Dist[i][j]/speeds - readyTime[j];
+	      	}
+     	}	      
 	  } 
-  }
+ 	}	  
 }
 
 minimize Obj;
@@ -196,17 +198,28 @@ forall(k in Vehicles)
   Capacity: sum(i in rV, j in NodesD: j!=i)(demand[j]*x[i][j][k]) <= C;
 
 // Subtour elimination;
-forall(i in rV, j in rV, k in Vehicles: i!=j && i!= v-1 && j!=0  && demand[i]+demand[j]<=C)  
+forall(i in rV, j in rV, k in Vehicles: j != i && i!= v-1 && j!=0  && demand[i]+demand[j]<=C)  
   SE: U[j][k] - U[i][k] + C * x[i][j][k] <= C -demand[i] * x[i][j][k];
   
   
 // arrival time at nodes from customers 
-forall(k in Vehicles, i in rCustomers, j in rV : i != j)
+forall (i in NodesN0, j in rV ,k in Vehicles: i != j && j != 0)
   ArrivalTime: w[j][k] >= w[i][k] + serviceTime[i] + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][k]);
+  
+  // PROBLEMA: non viene visualizzato questo vincolo
+  // macchina 3 arco (0,1)
+  // w[1][3] >= w[0][3] + 0 + 38.079/0.67
+  // w[1][3] >= 56.83
     
 // arrival time at nodes from customers 
-forall(k in Vehicles, i in rStations, j in rV : i != j)
+forall(i in rStations, j in rV ,k in Vehicles : i != j && j != 0)
   ArrivalTimeBattery: w[j][k] >= w[i][k] + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][k]);
+  
+// Time windows constraints
+forall(i in rV, k in Vehicles){
+  TimeWindLower: w[i][k] >= readyTime[i];
+  TimeWindUpper: w[i][k] <= dueDate[i];
+}  
     
 }
 
