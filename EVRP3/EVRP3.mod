@@ -36,6 +36,14 @@ int f;
 int C = ...;
 // number of vehichles
 int K = ...;
+// Capacity of the battery [KW]
+float Q = ...;
+// Recharging rate (min/KW)
+float G = ...;
+// energy consumption rate (KW/km)
+float R = ...;
+
+
 
 //velocity
 float speeds = ...;
@@ -151,8 +159,14 @@ dvar boolean x[rV][rV][Vehicles];
 // start time of service at node
 dvar float+ w[rV][Vehicles];
 
+// state of charge(SOC) at arrival at node i
+dvar float+ z[rV][Vehicles];
+
 // objective variable
 dvar float Obj;
+
+// big B for battery 
+int B = 1000;
 
 // big-M for time window
 float M[rV][rV];
@@ -206,14 +220,9 @@ forall(i in rV, j in rV, k in Vehicles: j != i && i!= v-1 && j!=0  && demand[i]+
 forall (i in NodesN0, j in rV ,k in Vehicles: i != j && j != 0)
   ArrivalTime: w[j][k] >= w[i][k] + serviceTime[i] + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][k]);
   
-  // PROBLEMA: non viene visualizzato questo vincolo
-  // macchina 3 arco (0,1)
-  // w[1][3] >= w[0][3] + 0 + 38.079/0.67
-  // w[1][3] >= 56.83
-    
 // arrival time at nodes from customers 
 forall(i in rStations, j in rV ,k in Vehicles : i != j && j != 0)
-  ArrivalTimeBattery: w[j][k] >= w[i][k] + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][k]);
+  ArrivalTimeBattery: w[j][k] >= w[i][k] + G*(Q - z[i][k]) + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][k]);
   
 // Time windows constraints
 forall(i in rV, k in Vehicles){
@@ -221,6 +230,25 @@ forall(i in rV, k in Vehicles){
   TimeWindUpper: w[i][k] <= dueDate[i];
 }  
     
+// Battery capacity dim
+forall(i in rV, k in Vehicles){
+  BatteryCapLower: z[i][k] >= 0;
+  BatteryCapUpper: z[i][k] <= Q;
+}
+
+
+// SOC on arrivals from customers
+forall(i in rCustomers, j in rV, k in Vehicles: i!=j && j != 0){
+	SOCCustomers: z[j][k] <= z[i][k] - R*Dist[i][j]*x[i][j][k] + B*(1 - x[i][j][k]);
+
+}
+
+// SOC on arrivals from stations
+forall(i in rStations, j in rV ,k in Vehicles : i != j && j != 0){
+	SOCStations: z[j][k] <= Q - R*Dist[i][j]*x[i][j][k] + B*(1 - x[i][j][k]);
+}	
+	
+
 }
 
 
