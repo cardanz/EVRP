@@ -130,6 +130,9 @@ execute{
 // number of nodes without depot 
 range NodesP = 1..v-1;
 
+// number of node without depot or n+1
+range NodesD = 1..v-2;
+
 // number of vehicles
 range Vehicles=1..K;
 
@@ -137,10 +140,10 @@ range Vehicles=1..K;
 range rCustomers = 1..c;
 
 // range of stations including the clones (3 al momento)
-range rStations = c+1..v-1;
+range rStations = c+1..v-2;
 
 // load variables
-dvar int+ U[i in NodesP][v in Vehicles] in demand[i]..C;
+dvar int+ U[i in rV][k in Vehicles] in demand[i]..C;
 
 // links used by vehicles variables
 dvar boolean x[rV][rV][Vehicles];
@@ -167,42 +170,46 @@ execute{
 minimize Obj;
 subject to 
 {
-Objective: Obj == sum(i in NodesP, v in Vehicles)U[i][v] + sum(i in rV, j in rV: i!=j) (Dist[i][j]*sum(v in Vehicles)(x[i][j][v]));
+Objective: Obj == sum(i in rV, j in rV: i!=j && i!=v-1 && j!=0) (Dist[i][j]*sum(k in Vehicles)(x[i][j][k]));
 
 // Apart from the depot each city must be visited only once;
 forall (j in rCustomers)
-  VisitedCustomers: sum(v in Vehicles, i in rV: i!=j) (x[i][j][v]) == 1;
+  VisitedCustomers: sum(k in Vehicles, i in rV: i!=j && i!= v-1) (x[i][j][k]) == 1;
   
-// station visite   
+// station visited   
 forall (j in rStations)
-  VisitedStations: sum(v in Vehicles, i in rV: i!=j) (x[i][j][v]) <= 1;
+  VisitedStations: sum(k in Vehicles, i in rV: i!=j && i!= v-1) (x[i][j][k]) <= 1;
 
-// If a vehicle travels to a city it must also leaves from there;
-forall (i in NodesP, v in Vehicles)
-  FlowCons: sum(j in rV: j!=i) (x[i][j][v]) == sum(j in rV: j!=i)(x[j][i][v]);
+// If a vehicle travels to a city or a station it must also leaves from there;
+forall (i in NodesD, k in Vehicles)
+  FlowCons: sum(j in rV: j!=i && j!= 0) (x[i][j][k]) == sum(j in rV: j!=i && j!= v-1)(x[j][i][k]);
+  
+//each vehicles leaves from depot only once
+forall(k in Vehicles){
+  LeaveDepot: sum(j in NodesD)x[0][j][k] <= 1;
+  
+  EnterDepot: sum(j in NodesD)x[0][j][k] - sum(i in NodesD)x[i][v-1][k] == 0;
+}
 
 //  Vehicles' capacity;
-forall(v in Vehicles)
-  Capacity: sum(i in rV, j in NodesP: j!=i)(demand[j]*x[i][j][v]) <= C;
-
-// Each vehicle must be used at most once;
-forall(v in Vehicles)
-  Capac: sum(j in NodesP) (x[0][j][v]) <= 1;
+forall(k in Vehicles)
+  Capacity: sum(i in rV, j in NodesD: j!=i)(demand[j]*x[i][j][k]) <= C;
 
 // Subtour elimination;
-forall(i in NodesP, j in NodesP, v in Vehicles: i!=j && demand[i]+demand[j]<=C)  
-  SE: U[j][v] - U[i][v] + C * x[i][j][v] <= C -demand[i];
+forall(i in rV, j in rV, k in Vehicles: i!=j && i!= v-1 && j!=0  && demand[i]+demand[j]<=C)  
+  SE: U[j][k] - U[i][k] + C * x[i][j][k] <= C -demand[i] * x[i][j][k];
   
   
 // arrival time at nodes from customers 
-forall(v in Vehicles, i in rCustomers, j in rV : i != j)
-  ArrivalTime: w[j][v] >= w[i][v] + serviceTime[i] + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][v]);
+forall(k in Vehicles, i in rCustomers, j in rV : i != j)
+  ArrivalTime: w[j][k] >= w[i][k] + serviceTime[i] + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][k]);
     
 // arrival time at nodes from customers 
-forall(v in Vehicles, i in rStations, j in rV : i != j)
-  ArrivalTimeBattery: w[j][v] >= w[i][v] + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][v]);
+forall(k in Vehicles, i in rStations, j in rV : i != j)
+  ArrivalTimeBattery: w[j][k] >= w[i][k] + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][k]);
     
 }
+
 
 
 
