@@ -93,107 +93,103 @@ execute{
 }
 
 //dist matrix
-float dist[rV][rV];
+float Dist[rV][rV];
+float maxx = 100000.0;
 execute{
   for(var i in rV){
 	  for(var j in rV){
-		   if( i == j) dist[i][j] = 0.0;
-		   else
-		    dist[i][j] = Opl.sqrt(Opl.pow(Opl.item(V,i).x -Opl.item(V,j).x, 2) +
-		                      Opl.pow(Opl.item(V,i).y -Opl.item(V,j).y, 2));                 
-		}  
-	}		     
+		   if( i == j){
+		   	Dist[i][j] = maxx;
+		   }
+		   else{
+		    Dist[i][j] = Opl.sqrt(Opl.pow(Opl.item(V,i).x -Opl.item(V,j).x, 2) +
+		    	Opl.pow(Opl.item(V,i).y -Opl.item(V,j).y, 2)); 
+		    if(Dist[i][j] == 0){
+		      Dist[i][j] = maxx;
+		      }                        
+		   }  	
+	 }		     
+  }
 }
-
 int prova;
 execute{
   prova = prova+1;
 }
 //-----------------------------------------
 
-// Xijk: for all i,j € V i != j , k € K 
-dvar boolean x[rV][rV][rK];
-// Yik: for all i € N, k € K
-dvar boolean y[rV][rK];
-// lik: for all i € N, k € K
-dvar float+ l[rV][rK];
-// objective function
+range NodesP = 1..v-1;
+range Vehicles=1..K;
+range rCustomers = 1..c;
+range rStations = c+1..v-1;
+dvar int+ U[i in NodesP][v in Vehicles] in demand[i]..C;
+dvar boolean x[rV][rV][Vehicles];
+
 dvar float Obj;
 
-// customers position in V
-range rangeN = 1..c;
-// all the node without depots (0 && n+1)
-range rangeNuF = 1..v-2;
-// all the  cloned stations
-range rangeFfirst = c+1..v-2;
-
 minimize Obj;
-subject to
+subject to 
 {
+Objective: Obj == sum(i in NodesP, v in Vehicles)U[i][v] + sum(i in rV, j in rV: i!=j) (Dist[i][j]*sum(v in Vehicles)(x[i][j][v]));
+
+// Apart from the depot each city must be visited only once;
+forall (j in rCustomers)
+  VisitedCustomers: sum(v in Vehicles, i in rV: i!=j) (x[i][j][v]) == 1;
   
-  Objective: Obj == sum(k in rK)sum(i in rV, j in rV: i!=j && i!=v-1 && j!=0)(dist[i][j] * x[i][j][k]);
+// station visite   
+forall (j in rStations)
+  VisitedStations: sum(v in Vehicles, i in rV: i!=j) (x[i][j][v]) <= 1;
+
+// If a vehicle travels to a city it must also leaves from there;
+forall (i in NodesP, v in Vehicles)
+  FlowCons: sum(j in rV: j!=i) (x[i][j][v]) == sum(j in rV: j!=i)(x[j][i][v]);
+
+//  Vehicles' capacity;
+forall(v in Vehicles)
+  Capacity: sum(i in rV, j in NodesP: j!=i)(demand[j]*x[i][j][v]) <= C;
+
+// Each vehicle must be used at most once;
+forall(v in Vehicles)
+  Capac: sum(j in NodesP) (x[0][j][v]) <= 1;
+
+// Subtour elimination;
+forall(i in NodesP, j in NodesP, v in Vehicles: i!=j && demand[i]+demand[j]<=C)  
+  SE: U[j][v] - U[i][v] + C * x[i][j][v] <= C -demand[i];
   
-  // Every customer assigned to a single vehicle
-  forall(i in rangeN){
-      VehAss: sum(k in rK)(y[i][k]) == 1;
-  }
-  
-  // Every customer has a successor node
-  forall(i in rangeNuF, k in rK){
-      SuccNode: sum(j in rV: j!=0 && j!=i)(x[i][j][k]) == y[i][k];
-  }
-  // 
-  forall(k in rK){
-      SuccLast: sum(j in rV)(x[v-1][j][k]) == 0;
-  }
-  
-  
-  //flow continuity
-  forall(k in rK, j in rangeNuF){
-     // FlowCont: sum(j in rV: i!=j && j!=0)x[i][j][k] - sum(j in rV: j!=i && j!=0)x[j][i][k] == 0;
-     FlowCont: sum( i in rV : i != j && i != v-1)(x[i][j][k]) == (y[j][k]);
-     
-  }
-  
-  //Eache station cloned visited at most once
-  forall(j in rangeFfirst){
-      VisitClone: sum(k in rK)sum(i in rV: i!=j && i!=v-1)x[i][j][k] <=1; 
-  }
-  
-  //Each station clone visited at most once
-  forall(j in rangeFfirst,k in rK){
-  visitStat2: sum(i in rV: i !=j && i != v-1)(x[i][j][k]) == sum(i in rV: i !=j && i != 0)(x[j][i][k]);
-  }  
-  
-  // Each vehicle leaves form depot only once
-  forall(k in rK){
-    LeaveDepot: sum(j in rV: j!=0)x[0][j][k] <=1;
-  }
-  
-   // if a vehicle leaves the depot it must return
-  forall(k in rK){
-    Return: sum(j in rV: j!=0)x[0][j][k] - sum(i in rV: i!= v-1)x[i][v-1][k] == 0;
-  }
-  
-  /*// load on vehicles at arrival at a node lik <= C && load on vehicles at arrival at a node lik >= Li
-  forall(k in rK, i in rangeN){
-  	upperBoundLoad:  l[i][k] <= C;
-  	lowerBoundLoad: l[i][k] >= demand[i] * y[i][k];
-  }
-    
-  // load constraints
-  forall(k in rK, i in rangeN, j in rangeN: i!=j && demand[i] + demand[j] <= C){
-    	//l valore con cui entro in j con la macchina k, deve essere minore del valore con cui sono 
-    	//entrato i con la macchina k sottraendo la domanda di i se arco (i,j) visitato da k se  (i,j)non visitato 
-    	// ljk <= -200 + lik
-  		loadConstraints: l[j][k] <= l[i][k] - demand[i] * x[i][j][k] - C * (1-x[i][j][k]);
-  } 
-  */
 }
 
+// script that write a result.csv file
+execute
+{
+var outFile = new IloOplOutputFile("Risult.csv", false); 
+//objective lower bound gap
+outFile.writeln("Obj;"+cplex.getObjValue());
+outFile.writeln("LB;"+cplex.getBestObjValue());
+outFile.writeln("Gap;"+cplex.getMIPRelativeGap());
 
+// file header
+outFile.writeln("Vehicle;Orig;Dest;Dist;ArrLoadOrig;ArrLoadDest");
 
-
+for (var i in rV)
+{
+ for (var j in rV)
+ {
+  if(i!=j)
+   for(var v in Vehicles)
+   { 
+    if(x[i][j][v]>=0.999) 		
+    {
+   	  if(j>0 && i>0) 
+   	     outFile.writeln(v,";",i,";",j,";",Dist[i][j],";",U[i][v],";",U[j][v]);
+   	  else if(i==0)
+   	          outFile.writeln(v,";",i,";",j,";",Dist[i][j],";0;",U[j][v]);
+   	       else 
+   	         outFile.writeln(v,";",i,";",j,";",Dist[i][j],";",U[i][v],";0");
+    }                        
+   }      
+ }
+}          
+outFile.close();
+}
 
 
 
