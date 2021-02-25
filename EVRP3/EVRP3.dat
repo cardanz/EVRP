@@ -14,7 +14,7 @@ Nodes = { // Type d=depot, f=station, c=customer
 
 C =200; //Vehicle load capacity
 K = 4; // number of vehicles
-
+speeds = 40;
 /*
 Q =79.69; //Battery capacity
 lcr = 0.05; // battery consumption rate for power kW/km*kg

@@ -6,9 +6,9 @@ tuple Node {
   int x;
   int y;
   int demand;
-  int ReadyTime;
-  int DueDate;
-  int ServiceTime;
+  int readyTime;
+  int dueDate;
+  int serviceTime;
 }
 {Node} Nodes = ...;
 // set of customers
@@ -37,6 +37,12 @@ int C = ...;
 // number of vehichles
 int K = ...;
 
+//velocity
+float speeds = ...;
+// km/min
+execute{
+  speeds = (speeds/60);
+}
 
 execute{
   numero_nodi = Nodes.size;
@@ -84,11 +90,17 @@ execute{
 // depot (0) - customers(N) -  cloned stations (F') - depot(n+1)
 range rV = 0..v-1;
 
-// array element with all the demands for all nodes
+// array element with all the data for all nodes 
 int demand[rV];
+int readyTime[rV];
+int dueDate[rV];
+int serviceTime[rV];
 execute{
  for(var i in rV){
    demand[i] = Opl.item(V, i).demand;
+   readyTime[i] = Opl.item(V, i).readyTime;
+   dueDate[i] = Opl.item(V, i).dueDate;
+   serviceTime[i] = Opl.item(V, i).serviceTime;
  }
 }
 
@@ -111,20 +123,46 @@ execute{
 	 }		     
   }
 }
-int prova;
-execute{
-  prova = prova+1;
-}
+
+
 //-----------------------------------------
 
+// number of nodes without depot 
 range NodesP = 1..v-1;
+
+// number of vehicles
 range Vehicles=1..K;
+
+// range of customers
 range rCustomers = 1..c;
+
+// range of stations including the clones (3 al momento)
 range rStations = c+1..v-1;
+
+// load variables
 dvar int+ U[i in NodesP][v in Vehicles] in demand[i]..C;
+
+// links used by vehicles variables
 dvar boolean x[rV][rV][Vehicles];
 
+// start time of service at node
+dvar float+ w[rV][Vehicles];
+
+// objective variable
 dvar float Obj;
+
+// big-M for time window
+float M[rV][rV];
+execute{
+  for(var i in rV){
+	  for(var j in rV){
+	    M[i][j] = 0;
+	    if(dueDate[i] + serviceTime[i] + Dist[i][j]/speeds - readyTime[j] > 0){
+	      M[i][j] = dueDate[i] + serviceTime[i] + Dist[i][j]/speeds - readyTime[j];
+	      }
+	  } 
+  }
+}
 
 minimize Obj;
 subject to 
@@ -155,7 +193,19 @@ forall(v in Vehicles)
 forall(i in NodesP, j in NodesP, v in Vehicles: i!=j && demand[i]+demand[j]<=C)  
   SE: U[j][v] - U[i][v] + C * x[i][j][v] <= C -demand[i];
   
+  
+// arrival time at nodes from customers 
+forall(v in Vehicles, i in rCustomers, j in rV : i != j)
+  ArrivalTime: w[j][v] >= w[i][v] + serviceTime[i] + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][v]);
+    
+// arrival time at nodes from customers 
+forall(v in Vehicles, i in rStations, j in rV : i != j)
+  ArrivalTimeBattery: w[j][v] >= w[i][v] + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][v]);
+    
 }
+
+
+
 
 // script that write a result.csv file
 execute
