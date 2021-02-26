@@ -12,12 +12,12 @@ Nodes = { // Type d=depot, f=station, c=customer
 <C81 c 85 35 60 761 823 90>
 };
 
-C =200; //Vehicle load capacity
+C = 200; //Vehicle load capacity
 K = 4; // number of vehicles
 speeds = 40;
 G = 3.39;
-R = 2.3;
-Q =79.69; //Battery capacity
+R = 1.5;
+Q = 100; //Battery capacity
 
 
 

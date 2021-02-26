@@ -166,7 +166,7 @@ dvar float+ z[rV][Vehicles];
 dvar float Obj;
 
 // big B for battery 
-int B = 1000;
+float B = 1000;
 
 // big-M for time window
 float M[rV][rV];
@@ -213,14 +213,20 @@ forall(k in Vehicles)
 
 // Subtour elimination;
 forall(i in rV, j in rV, k in Vehicles: j != i && i!= v-1 && j!=0  && demand[i]+demand[j]<=C)  
-  SE: U[j][k] - U[i][k] + C * x[i][j][k] <= C -demand[i] * x[i][j][k];
+  SE: U[j][k] - U[i][k] + C * x[i][j][k] <= C - demand[i] * x[i][j][k];
   
+  // riscrivibile così:
+  // SE: U[j][k] <= U[i][k] + C(1 - x[i][j][k]) - demand[i]*x[i][j][k]
+  // SE: U[i][k] - U[j][k] >= demand[i]*x[i][j][k] - C*(1 -x[i][j][k])
+  
+  // quello nelle dispense del prof è così:
+  // SE: U[i][k] - U[j][k] >= C*(1 -x[i][j][k]) + demand[i]*x[i][j][k]
   
 // arrival time at nodes from customers 
 forall (i in NodesN0, j in rV ,k in Vehicles: i != j && j != 0)
   ArrivalTime: w[j][k] >= w[i][k] + serviceTime[i] + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][k]);
   
-// arrival time at nodes from customers 
+// arrival time at nodes from stations
 forall(i in rStations, j in rV ,k in Vehicles : i != j && j != 0)
   ArrivalTimeBattery: w[j][k] >= w[i][k] + G*(Q - z[i][k]) + Dist[i][j]/speeds - M[i][j] * (1 - x[i][j][k]);
   
@@ -229,30 +235,63 @@ forall(i in rV, k in Vehicles){
   TimeWindLower: w[i][k] >= readyTime[i];
   TimeWindUpper: w[i][k] <= dueDate[i];
 }  
-    
+
+
 // Battery capacity dim
 forall(i in rV, k in Vehicles){
   BatteryCapLower: z[i][k] >= 0;
   BatteryCapUpper: z[i][k] <= Q;
+  if(i == 0)
+  	z[i][k] == Q;
 }
 
-
-// SOC on arrivals from customers
-forall(i in rCustomers, j in rV, k in Vehicles: i!=j && j != 0){
+/*
+// SOC on arrivals from customers (i,j) , i in customers
+forall(i in rCustomers, j in rV, k in Vehicles: i != j && j != 0){
 	SOCCustomers: z[j][k] <= z[i][k] - R*Dist[i][j]*x[i][j][k] + B*(1 - x[i][j][k]);
 
 }
 
-// SOC on arrivals from stations
+// SOC on arrivals from stations (i,j) , i in stations
 forall(i in rStations, j in rV ,k in Vehicles : i != j && j != 0){
 	SOCStations: z[j][k] <= Q - R*Dist[i][j]*x[i][j][k] + B*(1 - x[i][j][k]);
 }	
-	
 
+
+// SOC on arrivals from depot (0,j)
+forall(j in rV ,k in Vehicles : j != 0 && j != v-1){
+	SOCDepot: z[j][k] <= Q - R*Dist[0][j]*x[0][j][k] + B*(1 - x[0][j][k]);
+}	
+*/
+
+// prova vincoli letti su un doc
+// la sorgente è il dep o un customer e la destinazione è un customer
+forall(i in NodesN0,j in rCustomers, k in Vehicles: i != j && j != 0){
+  z[i][k] - z[j][k] >= Dist[i][j]*R*x[i][j][k] - B*(1 - x[i][j][k]);
+}
+
+// la sorgente è il dep o un customer e la destinazione è una stazione di ricarica
+forall(i in NodesN0,j in rStations, k in Vehicles:  i != j){
+  z[i][k] >= Dist[i][j]*R*x[i][j][k] - B*(1 - x[i][j][k]);
+}
+
+// la sorgente è una stazione di ricarica e la destinazione è un customer
+forall(i in rStations, j in rCustomers,k in Vehicles: i != j){
+	Q - z[j][k] >= Dist[i][j]*R*x[i][j][k] - B*(1 - x[i][j][k]);
+}
+
+// la sorgente è una stazione di ricarica e la destinazione è il dep finale
+forall(i in rStations,k in Vehicles){
+	Q - z[v-1][k] >= Dist[i][v-1]*R*x[i][v-1][k] - B*(1 - x[i][v-1][k]);
+}
+
+// la sorgente è un customer e la destinazione è il dep finale
+forall(i in rCustomers, k in Vehicles){
+  z[i][k] - z[v-1][k] >= Dist[i][v-1]*R*x[i][v-1][k] - B*(1 - x[i][v-1][k]);
 }
 
 
-
+}
 
 
 // script that write a result.csv file
