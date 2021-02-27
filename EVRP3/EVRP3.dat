@@ -1,10 +1,26 @@
-//< StringID Type x y demand ReadyTime DueDate ServiceTime >
-Nodes = { // Type d=depot, f=station, c=customer
+/*********************************************
+ * OPL data
+ * Authors: Cardano Matteo Stefano Lavaggi
+ * Creation Date: 22 feb 2021 at 9:10:48
+ *********************************************/
+
+
+/* dataset format < StringID, Type, x, y, demand, readyTime, dueDate, serviceTime >
+ * Type d=depot, f=station, c=customer
+ * x,y = coordinate of the node  
+ * demand = demand of the node
+ * readyTyme = start of the time window
+ * dueDate = end of the time window
+ * serviceTime = duration of the service
+ */
+
+// mettere i dati corretti del prof
+Nodes = { 
 <D0 d 40 50 0 0 1236 0>
 <S0 f 40 50 0 0 1236 0>
 <S1 f 73 52 0 0 1236 0>
 <S7 f 23 80 0 0 1236 0>
-<C12 c 25 85 10 2 228 90>
+<C12 c 25 85 10 176 228 90>
 <C17 c 18 75 20 633 711 90>
 <C19 c 15 80 30 455 513 90>
 <C77 c 88 30 40 534 600 90>
@@ -12,22 +28,32 @@ Nodes = { // Type d=depot, f=station, c=customer
 <C81 c 85 35 60 761 823 90>
 };
 
-C = 200; //Vehicle load capacity
-K = 4; // number of vehicles
+//Vehicle capacity
+C = 200; 
+
+// number of vehicles
+K = 4; 
+// velocity of vehicles
 speeds = 40;
-G = 3.39;
-R = 1.5;
-Q = 100; //Battery capacity
-lcr = 0.05;
-vcr = 0.2;
-
-
-
 /*
-lcr = 0.05; // battery consumption rate for power kW/km*kg
-g = 3.39; // battery recharging rate min/kW
-Speeds = { // <speed batteryConsumptionRateForKm >
+//<speed batteryConsumptionRateForKm >
+Speeds = {
 < 40 0.2>
 < 60 0.5>
 < 70 0.8>
-};*/
+};
+*/
+
+// recharging rate min/kW
+G = 3.39;
+
+// battery capacity
+Q = 79.69; 
+
+// load consumption rate kW/km*kg
+lcr = 0.05;
+
+// velocity consumption rate
+vcr = 0.2;
+
+
