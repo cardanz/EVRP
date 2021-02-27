@@ -272,23 +272,22 @@ outFile.writeln("LB;"+cplex.getBestObjValue());
 outFile.writeln("Gap;"+cplex.getMIPRelativeGap());
 
 // file header
-outFile.writeln("Vehicle;Orig;Dest;Dist;ArrLoadOrig;ArrLoadDest");
+//outFile.writeln("Vehicle;Orig;Dest;Dist;ArrLoadOrig;ArrLoadDest");
+outFile.writeln("Vehicle;Orig;Dest;xStart;yStart;xStop;yStop;Load");
 
-for (var i in rangeVertex)
-{
- for (var j in rangeVertex)
- {
+for (var i in rangeVertex){
+ for (var j in rangeVertex){
   if(i!=j)
-   for(var v in Vehicles)
-   { 
-    if(x[i][j][v]>=0.999) 		
-    {
-   	  if(j>0 && i>0) 
+   for(var v in Vehicles){ 
+    if(x[i][j][v]>=0.999){
+   	  /*if(j>0 && i>0) 
    	     outFile.writeln(v,";",i,";",j,";",Dist[i][j],";",load[i][v],";",load[j][v]);
    	  else if(i==0)
    	          outFile.writeln(v,";",i,";",j,";",Dist[i][j],";0;",load[j][v]);
    	       else 
    	         outFile.writeln(v,";",i,";",j,";",Dist[i][j],";",load[i][v],";0");
+   	  */
+   	  outFile.writeln(v,";",Opl.item(V,i).StringID,";",Opl.item(V,j).StringID,";",Opl.item(V,i).x,";",Opl.item(V,i).y,";",Opl.item(V,j).x,";",Opl.item(V,j).y,";",load[j][v]);
     }                        
    }      
  }
