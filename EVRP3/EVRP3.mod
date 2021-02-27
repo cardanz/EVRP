@@ -151,7 +151,7 @@ range rCustomers = 1..c;
 range rStations = c+1..v-2;
 
 // load variables
-dvar int+ U[i in rV][k in Vehicles] in demand[i]..C;
+dvar int+ U[i in rV][k in Vehicles] in 0..C;
 
 // links used by vehicles variables
 dvar boolean x[rV][rV][Vehicles];
@@ -186,7 +186,7 @@ execute{
 minimize Obj;
 subject to 
 {
-Objective: Obj == sum(i in rV, j in rV: i!=j && i!=v-1 && j!=0) (Dist[i][j]*sum(k in Vehicles)(x[i][j][k]));
+Objective: Obj == sum(i in rV,k in Vehicles)U[i][k] + sum(i in rV, j in rV: i!=j && i!=v-1 && j!=0) (Dist[i][j]*sum(k in Vehicles)(x[i][j][k]));
 
 // Apart from the depot each city must be visited only once;
 forall (j in rCustomers)
