@@ -275,11 +275,10 @@ outFile.writeln("Gap;"+cplex.getMIPRelativeGap());
 //outFile.writeln("Vehicle;Orig;Dest;Dist;ArrLoadOrig;ArrLoadDest");
 outFile.writeln("Vehicle;Orig;Dest;xStart;yStart;xStop;yStop;Load");
 
-for (var i in rangeVertex){
+for (var v in Vehicles){
  for (var j in rangeVertex){
-  if(i!=j)
-   for(var v in Vehicles){ 
-    if(x[i][j][v]>=0.999){
+   for(var i in rangeVertex){ 
+    if(i!=j && x[i][j][v]>=0.999){
    	  /*if(j>0 && i>0) 
    	     outFile.writeln(v,";",i,";",j,";",Dist[i][j],";",load[i][v],";",load[j][v]);
    	  else if(i==0)
