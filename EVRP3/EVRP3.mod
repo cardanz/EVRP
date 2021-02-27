@@ -10,6 +10,7 @@ tuple Node {
   int dueDate;
   int serviceTime;
 }
+
 {Node} Nodes = ...;
 // set of customers
 {Node} N = {n | n in Nodes: n.Type == "c"};
@@ -40,12 +41,15 @@ int K = ...;
 float Q = ...;
 // Recharging rate (min/KW)
 float G = ...;
-// energy consumption rate (KW/km)
+// energy consumption rate (kW/km)
 float R = ...;
+// load consumption rate (kW/km*kg)
+float lcr = ...;
+// velocity consumption rate (kW/km)
+float vcr = ...;
 
 
-
-//velocity
+// velocity
 float speeds = ...;
 // km/min
 execute{
@@ -186,7 +190,7 @@ execute{
 minimize Obj;
 subject to 
 {
-Objective: Obj == sum(i in rV,k in Vehicles)U[i][k] + sum(i in rV, j in rV: i!=j && i!=v-1 && j!=0) (Dist[i][j]*sum(k in Vehicles)(x[i][j][k]));
+Objective: Obj == sum(i in rV,j in rV, k in Vehicles:i != v-1 && i != j && j != 0)(U[j][k]*lcr*Dist[i][j]) + sum(i in rV, j in rV,k in Vehicles: i != v-1 && i != j && j != 0)(Dist[i][j]*vcr*x[i][j][k]) +  sum(i in rV, j in rV: i!=j && i!=v-1 && j!=0) (Dist[i][j]*sum(k in Vehicles)(x[i][j][k]));
 
 // Apart from the depot each city must be visited only once;
 forall (j in rCustomers)

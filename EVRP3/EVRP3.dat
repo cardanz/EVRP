@@ -18,6 +18,8 @@ speeds = 40;
 G = 3.39;
 R = 1.5;
 Q = 100; //Battery capacity
+lcr = 0.05;
+vcr = 0.2;
 
 
 
