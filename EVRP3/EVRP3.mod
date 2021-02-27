@@ -243,27 +243,27 @@ forall(i in rV, k in Vehicles){
 }
 
 // prova vincoli letti su un doc
-// la sorgente ï¿½ il dep o un customer e la destinazione ï¿½ un customer
+// la sorgente è il dep o un customer e la destinazione ï¿½ un customer
 forall(i in NodesN0,j in rCustomers, k in Vehicles: i != j && j != 0){
   z[i][k] - z[j][k] >= Dist[i][j]*R*x[i][j][k] - B*(1 - x[i][j][k]);
 }
 
-// la sorgente ï¿½ il dep o un customer e la destinazione ï¿½ una stazione di ricarica
+// la sorgente è il dep o un customer e la destinazione ï¿½ una stazione di ricarica
 forall(i in NodesN0,j in rStations, k in Vehicles:  i != j){
   z[i][k] >= Dist[i][j]*R*x[i][j][k] - B*(1 - x[i][j][k]);
 }
 
-// la sorgente ï¿½ una stazione di ricarica e la destinazione ï¿½ un customer
+// la sorgente è una stazione di ricarica e la destinazione ï¿½ un customer
 forall(i in rStations, j in rCustomers,k in Vehicles: i != j){
 	Q - z[j][k] >= Dist[i][j]*R*x[i][j][k] - B*(1 - x[i][j][k]);
 }
 
-// la sorgente ï¿½ una stazione di ricarica e la destinazione ï¿½ il dep finale
+// la sorgente è una stazione di ricarica e la destinazione ï¿½ il dep finale
 forall(i in rStations,k in Vehicles){
 	Q - z[v-1][k] >= Dist[i][v-1]*R*x[i][v-1][k] - B*(1 - x[i][v-1][k]);
 }
 
-// la sorgente ï¿½ un customer e la destinazione ï¿½ il dep finale
+// la sorgente è un customer e la destinazione ï¿½ il dep finale
 forall(i in rCustomers, k in Vehicles){
   z[i][k] - z[v-1][k] >= Dist[i][v-1]*R*x[i][v-1][k] - B*(1 - x[i][v-1][k]);
 }
