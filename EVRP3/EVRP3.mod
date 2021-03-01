@@ -106,7 +106,7 @@ execute{
  }
 }
 
-//dist matrix
+// distance matrix
 float Dist[rangeVertex][rangeVertex];
 // in order to avoid autolinks
 float maxx = 100000;
@@ -128,6 +128,19 @@ execute{
   }
 }
 
+
+// S[i] boolean param
+// S has value 1 if the node is a station, otherwise is 0
+int S[i in rangeVertex];
+execute{
+  for(i in rangeVertex){
+    if(Opl.item(V, i).Type == 'f'){
+      S[i] = 1;
+    }else{
+      S[i] = 0;
+    }
+  }
+}
 
 // constraints and optimization
 
@@ -236,28 +249,30 @@ subject to {
 	}
 	
 	// the source is the depot or a customer and the destination is a customer
-	forall(i in rangeN0,j in rangeCustomers, k in Vehicles: i != j && j != 0){
-	  z[i][k] - z[j][k] >= Dist[i][j] * vcr * x[i][j][k] + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
+	forall(i in rangeN0,j in rangeCustomerStation, k in Vehicles: i != j){
+	  BatteryCustomer2Customer: z[i][k] - z[j][k] >= Dist[i][j] * vcr * x[i][j][k] + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
+	
 	
 	// the source is the depot or a customer and the destination is a charging station
 	forall(i in rangeN0,j in rangeStations, k in Vehicles:  i != j){
-	  z[i][k] >= Dist[i][j] * vcr * x[i][j][k] + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
+	  BatteryCustomer2Station: z[i][k] >= Dist[i][j] * vcr * x[i][j][k] + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
+	
 	// the source is a charging station and the destination is a customer
-	forall(i in rangeStations, j in rangeCustomers,k in Vehicles: i != j){
-		Q - z[j][k] >= Dist[i][j] * vcr * x[i][j][k] + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
+	forall(i in rangeStations, j in rangeCustomers,k in Vehicles){
+		BatteryStation2Customer: Q - z[j][k] >= Dist[i][j] * vcr * x[i][j][k] + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
 	// the source is a charging station and the destination is the final depot
 	forall(i in rangeStations,k in Vehicles){
-		Q - z[v-1][k] >= Dist[i][v-1] * vcr * x[i][v-1][k] + load[v-1][k] * lcr * Dist[i][v-1] - B * (1 - x[i][v-1][k]);
+		BatteryStation2Depot: Q - z[v-1][k] >= Dist[i][v-1] * vcr * x[i][v-1][k] + load[v-1][k] * lcr * Dist[i][v-1] - B * (1 - x[i][v-1][k]);
 	}
 	
 	// the source is a customer and the destination is the final depot
 	forall(i in rangeCustomers, k in Vehicles){
-	  z[i][k] - z[v-1][k] >= Dist[i][v-1] * vcr * x[i][v-1][k] + load[v-1][k] * lcr * Dist[i][v-1] - B * (1 - x[i][v-1][k]);
+	  BatteryCustomer2Depot: z[i][k] - z[v-1][k] >= Dist[i][v-1] * vcr * x[i][v-1][k] + load[v-1][k] * lcr * Dist[i][v-1] - B * (1 - x[i][v-1][k]);
 	}
 }
 
