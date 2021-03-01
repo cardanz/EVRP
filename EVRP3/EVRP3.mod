@@ -129,7 +129,7 @@ execute{
 }
 
 
-//constraints and optimization
+// constraints and optimization
 
 // number of nodes (start node + customer) 
 range rangeN0 = 0..c;
@@ -237,27 +237,27 @@ subject to {
 	
 	// the source is the depot or a customer and the destination is a customer
 	forall(i in rangeN0,j in rangeCustomers, k in Vehicles: i != j && j != 0){
-	  z[i][k] - z[j][k] >= Dist[i][j] * vcr * x[i][j][k] - B * (1 - x[i][j][k]);
+	  z[i][k] - z[j][k] >= Dist[i][j] * vcr * x[i][j][k] + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
 	// the source is the depot or a customer and the destination is a charging station
 	forall(i in rangeN0,j in rangeStations, k in Vehicles:  i != j){
-	  z[i][k] >= Dist[i][j] * vcr * x[i][j][k] - B * (1 - x[i][j][k]);
+	  z[i][k] >= Dist[i][j] * vcr * x[i][j][k] + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
 	// the source is a charging station and the destination is a customer
 	forall(i in rangeStations, j in rangeCustomers,k in Vehicles: i != j){
-		Q - z[j][k] >= Dist[i][j] * vcr * x[i][j][k] - B * (1 - x[i][j][k]);
+		Q - z[j][k] >= Dist[i][j] * vcr * x[i][j][k] + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
 	// the source is a charging station and the destination is the final depot
 	forall(i in rangeStations,k in Vehicles){
-		Q - z[v-1][k] >= Dist[i][v-1] * vcr * x[i][v-1][k] - B * (1 - x[i][v-1][k]);
+		Q - z[v-1][k] >= Dist[i][v-1] * vcr * x[i][v-1][k] + load[v-1][k] * lcr * Dist[i][v-1] - B * (1 - x[i][v-1][k]);
 	}
 	
 	// the source is a customer and the destination is the final depot
 	forall(i in rangeCustomers, k in Vehicles){
-	  z[i][k] - z[v-1][k] >= Dist[i][v-1] * vcr * x[i][v-1][k] - B * (1 - x[i][v-1][k]);
+	  z[i][k] - z[v-1][k] >= Dist[i][v-1] * vcr * x[i][v-1][k] + load[v-1][k] * lcr * Dist[i][v-1] - B * (1 - x[i][v-1][k]);
 	}
 }
 
@@ -279,12 +279,15 @@ for (var v in Vehicles){
  for (var j in rangeVertex){
    for(var i in rangeVertex){ 
     if(i!=j && x[i][j][v]>=0.999){
-   	  /*if(j>0 && i>0) 
+   	  /*
+   	  
+   	  if(j>0 && i>0) 
    	     outFile.writeln(v,";",i,";",j,";",Dist[i][j],";",load[i][v],";",load[j][v]);
    	  else if(i==0)
    	          outFile.writeln(v,";",i,";",j,";",Dist[i][j],";0;",load[j][v]);
    	       else 
    	         outFile.writeln(v,";",i,";",j,";",Dist[i][j],";",load[i][v],";0");
+   	  
    	  */
    	  outFile.writeln(v,";",Opl.item(V,i).StringID,";",Opl.item(V,j).StringID,";",Opl.item(V,i).x,";",Opl.item(V,i).y,";",Opl.item(V,j).x,";",Opl.item(V,j).y,";",load[j][v]);
     }                        
