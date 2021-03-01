@@ -133,7 +133,7 @@ execute{
 // S has value 1 if the node is a station, otherwise is 0
 int S[i in rangeVertex];
 execute{
-  for(i in rangeVertex){
+  for(var i in rangeVertex){
     if(Opl.item(V, i).Type == 'f'){
       S[i] = 1;
     }else{
@@ -217,8 +217,10 @@ subject to {
 	  //and if it exit it must return 
 	  EnterDepot: sum(j in rangeCustomerStation)x[0][j][k] - sum(i in rangeCustomerStation)x[i][v-1][k] == 0;
 	  
+	  /*
 	  // max load 
 	  Capacity: sum(i in rangeVertex, j in rangeCustomerStation: j!=i)(demand[j]*x[i][j][k]) <= C;
+	  */
 	}
 	  
 	
@@ -255,7 +257,7 @@ subject to {
 	
 	
 	// the source is the depot or a customer and the destination is a charging station
-	forall(i in rangeN0,j in rangeStations, k in Vehicles:  i != j){
+	forall(i in rangeN0,j in rangeStations, k in Vehicles){
 	  BatteryCustomer2Station: z[i][k] >= Dist[i][j] * vcr * x[i][j][k] + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
