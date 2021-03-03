@@ -180,20 +180,21 @@ dvar boolean velocity[rangeVertex][rangeVertex][rangeSpeeds];
 dvar float Obj;
 
 // big B for battery 
-float B = 1000;
+float B = 10000;
 
 // big-M for time window Mij = max {0, bi + Si + Tij - aj} slide(90) problem  with different speeds
+//we always maximize with 100000 because we have differente speeds
 float M = 100000;
 
 
 minimize Obj;
 subject to {
   
-	Objective: Obj == sum(i in rangeVertex,j in rangeVertex, k in Vehicles:i != numberOfVertex-1 && i != j && j != 0)(load[j][k]*lcr*Dist[i][j])
-			+ sum(i in rangeVertex, j in rangeVertex,s in rangeSpeeds: i != numberOfVertex-1 && i != j && j != 0)(Dist[i][j]*vcr[s]*velocity[i][j][s])
-			+ sum(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0) (Dist[i][j]*sum(k in Vehicles)(x[i][j][k]));
+	Objective: Obj == sum(i in rangeVertex, j in rangeVertex, k in Vehicles: i != numberOfVertex-1 && i != j && j != 0)(load[j][k] * lcr * Dist[i][j])
+			+ sum(i in rangeVertex, j in rangeVertex, s in rangeSpeeds: i != numberOfVertex-1 && i != j && j != 0)(Dist[i][j] * vcr[s] * velocity[i][j][s])
+			+ sum(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0) (Dist[i][j] * sum(k in Vehicles)(x[i][j][k]));
 	
-	//
+	//constraint for choose the velocity on the arc 
 	forall(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0){
 	  chooseVelocity: sum(s in rangeSpeeds) velocity[i][j][s] == sum(k in Vehicles) x[i][j][k];
 	}
@@ -216,7 +217,7 @@ subject to {
 	  LeaveDepot: sum(j in rangeCustomerStation)x[0][j][k] <= 1;
 	  
 	  //and if it exit it must return 
-	  EnterDepot: sum(j in rangeCustomerStation)x[0][j][k] - sum(i in rangeCustomerStation)x[i][numberOfVertex - 1][k] == 0;	  
+	  EnterDepot: sum(j in rangeCustomerStation)x[0][j][k] - sum(i in rangeCustomerStation) x[i][numberOfVertex - 1][k] == 0;	  
 	}
 	  
 	// Subtour elimination;
