@@ -30,7 +30,7 @@ tuple speedVcr{
 {Node} D = {n | n in Nodes: n.Type == "d"};
 // set of recharging stations
 {Node} F = {n | n in Nodes: n.Type == "f"};
-
+// set of velocity and consumption rate
 {speedVcr} speedsVcr =...;
 
 // number of customers
@@ -39,6 +39,10 @@ int numberOfCustomer;
 int numberOfStation;
 //number of velocity
 int  numberOfVelocity;
+// in order to manage the number of clones, 1 = one clone for each station, 2 ... 
+int numberOfClones = 1;
+// number of total vertex
+int numberOfVertex;
 
 // vehichle capacity
 int C = ...;
@@ -63,11 +67,9 @@ range rF = 0..numberOfStation-1;
 range Vehicles = 1..K;
 
 {Node} Fcloned;
-
 // add cloned station 
 int copies = 0;
-// in order to manage the number of clones, 1 = one clone for each station, 2 ... 
-int numberOfClones = 1;
+
 execute{
   for( var i in rF){
     copies = 0;
@@ -82,7 +84,6 @@ execute{
 
 // all the vertex afther adding cloned stations 
 {Node} V = {n | n in Nodes: n.Type == "d"} union {n | n in Nodes: n.Type == "c"};
-int numberOfVertex;
 execute{
   // add all the clones
   V.add(Fcloned);
@@ -131,13 +132,13 @@ execute{
   for(var i in rangeVertex){
 	  for(var j in rangeVertex){
 		   if( i == j){
-		    // autolink
+		    // autolink in order to avoid useless paths
 		   	Dist[i][j] = maxx;
 		   }
 		   else{
 		    Dist[i][j] = Opl.sqrt(Opl.pow(Opl.item(V,i).x -Opl.item(V,j).x, 2) + Opl.pow(Opl.item(V,i).y -Opl.item(V,j).y, 2)); 
 		    if(Dist[i][j] == 0){
-		      // cloned stations
+		      // cloned stations in order to avoid useless paths clone0Station0 --> clone1Station0
 		      Dist[i][j] = maxx;
 		      }                        
 		   }  	
