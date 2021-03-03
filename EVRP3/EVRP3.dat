@@ -33,16 +33,12 @@ C = 200;
 
 // number of vehicles
 K = 4; 
-// velocity of vehicles
-speeds = 40;
-/*
-//<speed batteryConsumptionRateForKm >
-Speeds = {
-< 40 0.2>
+// velocity of vehicles and consumption rate
+speedsVcr = {
+< 1 0.2>
 < 60 0.5>
 < 70 0.8>
 };
-*/
 
 // recharging rate min/kW
 G = 3.39;
@@ -53,7 +49,5 @@ Q = 79.69;
 // load consumption rate kW/km*kg
 lcr = 0.05;
 
-// velocity consumption rate
-vcr = 0.2;
 
 
