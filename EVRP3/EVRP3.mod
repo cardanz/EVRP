@@ -16,6 +16,7 @@ tuple Node {
   int serviceTime;
 }
 
+// speed, vcr
 tuple speedVcr{
   int speed;
   float vcr;
@@ -223,13 +224,13 @@ subject to {
 	forall(i in rangeVertex, j in rangeVertex, k in Vehicles: j != i && i!= numberOfVertex-1 && j!=0  && demand[i] + demand[j]<=C)  
 	  SE: load[j][k] - load[i][k] + C * x[i][j][k] <= C - demand[i] * x[i][j][k];
 	    
-	// arrival time at nodes from customers 
-	forall (i in rangeN0, j in rangeVertex ,k in Vehicles: i != j && j != 0)
-	  ArrivalTime: w[j][k] >= w[i][k] + serviceTime[i] + sum(s in rangeSpeeds) ((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
+	// Arrival time at nodes from customers 
+	forall (i in rangeN0, j in rangeVertex, k in Vehicles: i != j && j != 0)
+	  ArrivalTime: w[j][k] >= w[i][k] + serviceTime[i] + sum(s in rangeSpeeds)((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
 	  
-	// arrival time at nodes from stations
-	forall(i in rangeStations, j in rangeVertex ,k in Vehicles : i != j && j != 0)
-	  ArrivalTimeBattery: w[j][k] >= w[i][k] + G*(Q - z[i][k]) + sum(s in rangeSpeeds) ((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
+	// Arrival time at nodes from stations
+	forall(i in rangeStations, j in rangeVertex, k in Vehicles : i != j && j != 0)
+	  ArrivalTimeBattery: w[j][k] >= w[i][k] + G*(Q - z[i][k]) + sum(s in rangeSpeeds)((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
 	  
 	// Time windows constraints
 	forall(i in rangeVertex, k in Vehicles){
@@ -243,33 +244,36 @@ subject to {
 	  BatteryCapUpper: z[i][k] <= Q;
 	}
 	
-	// start with max battery charge
+	// Start with max battery charge
+	// the battery at node 0 is the maximum
 	forall(k in Vehicles)
 	  BatteryStart: z[0][k] == Q;
 	
-	// the source is the depot or a customer and the destination is a customer
-	forall(i in rangeN0,j in rangeCustomerStation, k in Vehicles: i != j){
-	  BatteryCustomer2Customer: z[i][k] - z[j][k] >= sum(s in rangeSpeeds) (Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
+	// The source is the depot or a customer and the destination is a customer
+	forall(i in rangeN0, j in rangeCustomerStation, k in Vehicles: i != j){
+	  BatteryCustomer2Customer: z[i][k] - z[j][k] >= sum(s in rangeSpeeds)(Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
-	// the source is the depot or a customer and the destination is a charging station
-	forall(i in rangeN0,j in rangeStations, k in Vehicles:  i != j){
-	  BatteryCustomer2Station: z[i][k] >= sum(s in rangeSpeeds) (Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
+	// The source is the depot or a customer and the destination is a charging station
+	forall(i in rangeN0, j in rangeStations, k in Vehicles:  i != j){
+	  BatteryCustomer2Station: z[i][k] >= sum(s in rangeSpeeds)(Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
-	// the source is a charging station and the destination is a customer
-	forall(i in rangeStations, j in rangeCustomers,k in Vehicles){
-		BatteryStation2Customer: Q - z[j][k] >= sum(s in rangeSpeeds) (Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
+	// The source is a charging station and the destination is a customer
+	forall(i in rangeStations, j in rangeCustomers, k in Vehicles){
+		BatteryStation2Customer: Q - z[j][k] >= sum(s in rangeSpeeds)(Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
-	// the source is a charging station and the destination is the final depot
-	forall(i in rangeStations,k in Vehicles){
-		BatteryStation2Depot: Q - z[numberOfVertex - 1][k] >= sum(s in rangeSpeeds) (Dist[i][numberOfVertex - 1]* vcr[s] * velocity[i][numberOfVertex -1][s]) + load[numberOfVertex-1][k] * lcr * Dist[i][numberOfVertex-1] - B * (1 - x[i][numberOfVertex-1][k]);
+	// The source is a charging station and the destination is the final depot
+	forall(i in rangeStations, k in Vehicles){
+		BatteryStation2Depot: Q - z[numberOfVertex - 1][k] >= sum(s in rangeSpeeds)(Dist[i][numberOfVertex - 1] * vcr[s] * velocity[i][numberOfVertex - 1][s]) + 
+								load[numberOfVertex - 1][k] * lcr * Dist[i][numberOfVertex - 1] - B * (1 - x[i][numberOfVertex - 1][k]);
 	}
 	
-	// the source is a customer and the destination is the final depot
+	// The source is a customer and the destination is the final depot
 	forall(i in rangeCustomers, k in Vehicles){
-	  BatteryCustomer2Depot: z[i][k] - z[numberOfVertex - 1][k] >= sum(s in rangeSpeeds) (Dist[i][numberOfVertex - 1]* vcr[s] * velocity[i][numberOfVertex-1][s]) + load[numberOfVertex-1][k] * lcr * Dist[i][numberOfVertex-1] - B * (1 - x[i][numberOfVertex-1][k]);
+	  BatteryCustomer2Depot: z[i][k] - z[numberOfVertex - 1][k] >= sum(s in rangeSpeeds)(Dist[i][numberOfVertex - 1] * vcr[s] * velocity[i][numberOfVertex - 1][s]) + 
+	  							load[numberOfVertex - 1][k] * lcr * Dist[i][numberOfVertex - 1] - B * (1 - x[i][numberOfVertex - 1][k]);
 	}
 }
 
