@@ -97,7 +97,7 @@ execute{
   numberOfVertex = V.size;
 }
 
-// depot (0) - customers(N) -  cloned stations (F') - depot(n+1)
+// layout: depot (0) - customers(N) -  cloned stations (F') - depot(n+1)
 range rangeVertex = 0..numberOfVertex-1;
 
 // array element with all the data for all nodes 
@@ -148,6 +148,8 @@ execute{
 	  }		     
   }
 }
+
+//--------------------------------------------------------------------------------------------------------------------------------------
 
 // variables,constraints and optimization
 
@@ -206,23 +208,23 @@ subject to {
 	
 	// Apart from the depot each city must be visited only once;
 	forall (j in rangeCustomers)
-	  VisitAllCustomers: sum(k in Vehicles, i in rangeVertex: i!=j && i!= numberOfVertex-1) (x[i][j][k]) == 1;
+	  visitAllCustomers: sum(k in Vehicles, i in rangeVertex: i!=j && i!= numberOfVertex-1) (x[i][j][k]) == 1;
 	  
 	// station visited   
 	forall (j in rangeStations)
-	  VisitedStations: sum(k in Vehicles, i in rangeVertex: i!=j && i!= numberOfVertex-1) (x[i][j][k]) <= 1;
+	  visitedStations: sum(k in Vehicles, i in rangeVertex: i!=j && i!= numberOfVertex-1) (x[i][j][k]) <= 1;
 	
 	// If a vehicle travels to a city or a station it must also leaves from there;
 	forall (i in rangeCustomerStation, k in Vehicles)
-	  FlowConservation: sum(j in rangeVertex: j!=i && j!= 0) (x[i][j][k]) == sum(j in rangeVertex: j!=i && j!= numberOfVertex - 1)(x[j][i][k]);
+	  flowConservation: sum(j in rangeVertex: j!=i && j!= 0) (x[i][j][k]) == sum(j in rangeVertex: j!=i && j!= numberOfVertex - 1)(x[j][i][k]);
 	  
 	
 	forall(k in Vehicles){
 	  //each vehicles leaves from depot only once
-	  LeaveDepot: sum(j in rangeCustomerStation)x[0][j][k] <= 1;
+	  leaveDepot: sum(j in rangeCustomerStation)x[0][j][k] <= 1;
 	  
 	  //and if it exit it must return 
-	  EnterDepot: sum(j in rangeCustomerStation)x[0][j][k] - sum(i in rangeCustomerStation) x[i][numberOfVertex - 1][k] == 0;	  
+	  enterDepot: sum(j in rangeCustomerStation)x[0][j][k] - sum(i in rangeCustomerStation) x[i][numberOfVertex - 1][k] == 0;	  
 	}
 	  
 	// Subtour elimination;
@@ -231,53 +233,53 @@ subject to {
 	    
 	// Arrival time at nodes from customers 
 	forall (i in rangeN0, j in rangeVertex, k in Vehicles: i != j && j != 0)
-	  ArrivalTime: w[j][k] >= w[i][k] + serviceTime[i] + sum(s in rangeSpeeds)((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
+	  arrivalTime: w[j][k] >= w[i][k] + serviceTime[i] + sum(s in rangeSpeeds)((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
 	  
 	// Arrival time at nodes from stations
 	forall(i in rangeStations, j in rangeVertex, k in Vehicles : i != j && j != 0)
-	  ArrivalTimeBattery: w[j][k] >= w[i][k] + G*(Q - z[i][k]) + sum(s in rangeSpeeds)((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
+	  arrivalTimeBattery: w[j][k] >= w[i][k] + G*(Q - z[i][k]) + sum(s in rangeSpeeds)((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
 	  
 	// Time windows constraints
 	forall(i in rangeVertex, k in Vehicles){
-	  TimeWindLower: w[i][k] >= readyTime[i];
-	  TimeWindUpper: w[i][k] <= dueDate[i];
+	  timeWindLower: w[i][k] >= readyTime[i];
+	  timeWindUpper: w[i][k] <= dueDate[i];
 	}  
 	
 	// Battery capacity dimension
 	forall(i in rangeVertexWithoutZ, k in Vehicles){
-	  BatteryCapLower: z[i][k] >= 0;
-	  BatteryCapUpper: z[i][k] <= Q;
+	  batteryCapLower: z[i][k] >= 0;
+	  batteryCapUpper: z[i][k] <= Q;
 	}
 	
 	// Start with max battery charge
 	// the battery at node 0 is the maximum
 	forall(k in Vehicles)
-	  BatteryStart: z[0][k] == Q;
+	  batteryStart: z[0][k] == Q;
 	
 	// The source is the depot or a customer and the destination is a customer
 	forall(i in rangeN0, j in rangeCustomerStation, k in Vehicles: i != j){
-	  BatteryCustomer2Customer: z[i][k] - z[j][k] >= sum(s in rangeSpeeds)(Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
+	  batteryCustomer2Customer: z[i][k] - z[j][k] >= sum(s in rangeSpeeds)(Dist[i][j] * vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
 	// The source is the depot or a customer and the destination is a charging station
 	forall(i in rangeN0, j in rangeStations, k in Vehicles:  i != j){
-	  BatteryCustomer2Station: z[i][k] >= sum(s in rangeSpeeds)(Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
+	  batteryCustomer2Station: z[i][k] >= sum(s in rangeSpeeds)(Dist[i][j] * vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
 	// The source is a charging station and the destination is a customer
 	forall(i in rangeStations, j in rangeCustomers, k in Vehicles){
-		BatteryStation2Customer: Q - z[j][k] >= sum(s in rangeSpeeds)(Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
+		batteryStation2Customer: Q - z[j][k] >= sum(s in rangeSpeeds)(Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
 	
 	// The source is a charging station and the destination is the final depot
 	forall(i in rangeStations, k in Vehicles){
-		BatteryStation2Depot: Q - z[numberOfVertex - 1][k] >= sum(s in rangeSpeeds)(Dist[i][numberOfVertex - 1] * vcr[s] * velocity[i][numberOfVertex - 1][s]) + 
+		batteryStation2Depot: Q - z[numberOfVertex - 1][k] >= sum(s in rangeSpeeds)(Dist[i][numberOfVertex - 1] * vcr[s] * velocity[i][numberOfVertex - 1][s]) + 
 								load[numberOfVertex - 1][k] * lcr * Dist[i][numberOfVertex - 1] - B * (1 - x[i][numberOfVertex - 1][k]);
 	}
 	
 	// The source is a customer and the destination is the final depot
 	forall(i in rangeCustomers, k in Vehicles){
-	  BatteryCustomer2Depot: z[i][k] - z[numberOfVertex - 1][k] >= sum(s in rangeSpeeds)(Dist[i][numberOfVertex - 1] * vcr[s] * velocity[i][numberOfVertex - 1][s]) + 
+	  batteryCustomer2Depot: z[i][k] - z[numberOfVertex - 1][k] >= sum(s in rangeSpeeds)(Dist[i][numberOfVertex - 1] * vcr[s] * velocity[i][numberOfVertex - 1][s]) + 
 	  							load[numberOfVertex - 1][k] * lcr * Dist[i][numberOfVertex - 1] - B * (1 - x[i][numberOfVertex - 1][k]);
 	}
 }
