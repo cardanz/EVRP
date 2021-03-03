@@ -187,7 +187,7 @@ execute{
 	  for(var j in rangeVertex){
 	    if(i != v-1 && j != 0 && i != j){
 	    	M[i][j] = 100000;  
-	    	// perchè dipende dalla velocità e non posso farci nulla
+	    	// perchï¿½ dipende dalla velocitï¿½ e non posso farci nulla
 	    	//M[i][j] = 0;
 	    	//if(dueDate[i] + serviceTime[i] + Dist[i][j]/speeds - readyTime[j] > 0 && Dist[i][j] != 0){
 	      		// if bi + Si + Tij - aj is greater than 0 we rewrite M[i][j]
@@ -232,8 +232,10 @@ subject to {
 	  //and if it exit it must return 
 	  EnterDepot: sum(j in rangeCustomerStation)x[0][j][k] - sum(i in rangeCustomerStation)x[i][v-1][k] == 0;
 	  
+	  /*
 	  // max load 
 	  Capacity: sum(i in rangeVertex, j in rangeCustomerStation: j!=i)(demand[j]*x[i][j][k]) <= C;
+	  */
 	}
 	  
 	
