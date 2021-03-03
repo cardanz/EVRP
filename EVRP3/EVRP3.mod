@@ -35,9 +35,9 @@ tuple speedVcr{
 
 // number of customers
 int numberOfCustomer;
-//number of recharcing stations
+// number of recharcing stations
 int numberOfStation;
-//number of velocity
+// number of velocity
 int  numberOfVelocity;
 // in order to manage the number of clones, 1 = one clone for each station, 2 ... 
 int numberOfClones = 1;
@@ -201,7 +201,7 @@ subject to {
 			+ sum(i in rangeVertex, j in rangeVertex, s in rangeSpeeds: i != numberOfVertex-1 && i != j && j != 0)(Dist[i][j] * vcr[s] * velocity[i][j][s])
 			+ sum(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0) (Dist[i][j] * sum(k in Vehicles)(x[i][j][k]));
 	
-	//constraint for choose the velocity on the arc 
+	// constraint for choose the velocity on the arc 
 	forall(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0){
 	  chooseVelocity: sum(s in rangeSpeeds) velocity[i][j][s] == sum(k in Vehicles) x[i][j][k];
 	}
@@ -220,10 +220,10 @@ subject to {
 	  
 	
 	forall(k in Vehicles){
-	  //each vehicles leaves from depot only once
+	  // each vehicles leaves from depot only once
 	  leaveDepot: sum(j in rangeCustomerStation)x[0][j][k] <= 1;
 	  
-	  //and if it exit it must return 
+	  // and if it exit it must return 
 	  enterDepot: sum(j in rangeCustomerStation)x[0][j][k] - sum(i in rangeCustomerStation) x[i][numberOfVertex - 1][k] == 0;	  
 	}
 	  
