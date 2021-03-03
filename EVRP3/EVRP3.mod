@@ -88,9 +88,12 @@ execute{
   // add all the clones
   V.add(Fcloned);
   
-  // add depot (n+1) in the last position return node
+  // modify name of the last depot 
+  // add depot (n+1) in the last position as return node
   Opl.item(D, 0).StringID = Opl.item(D, 0).StringID + "_{n+1}";
   V.add(D);
+  
+  // saving the num of total vertex
   numberOfVertex = V.size;
 }
 
@@ -136,7 +139,7 @@ execute{
 		   	Dist[i][j] = maxx;
 		   }
 		   else{
-		    Dist[i][j] = Opl.sqrt(Opl.pow(Opl.item(V,i).x -Opl.item(V,j).x, 2) + Opl.pow(Opl.item(V,i).y -Opl.item(V,j).y, 2)); 
+		    Dist[i][j] = Opl.sqrt(Opl.pow(Opl.item(V,i).x - Opl.item(V,j).x, 2) + Opl.pow(Opl.item(V,i).y - Opl.item(V,j).y, 2)); 
 		    if(Dist[i][j] == 0){
 		      // cloned stations in order to avoid useless paths clone0Station0 --> clone1Station0
 		      Dist[i][j] = maxx;
@@ -185,7 +188,7 @@ dvar float Obj;
 float B = 10000;
 
 // big-M for time window Mij = max {0, bi + Si + Tij - aj} slide(90) problem  with different speeds
-//we always maximize with 100000 because we have differente speeds
+// we always maximize with 100000 ( instaed of using Mij) because we have differente speeds...
 float M = 100000;
 
 
@@ -283,11 +286,10 @@ subject to {
 // script that write a result.csv file
 execute
 {
-var outFile = new IloOplOutputFile("Result.csv", false); 
-//objective lower bound gap
-outFile.writeln("Obj;"+cplex.getObjValue());
-outFile.writeln("LB;"+cplex.getBestObjValue());
-outFile.writeln("Gap;"+cplex.getMIPRelativeGap());
+var outFile = new IloOplOutputFile("Result.csv", false);
+outFile.writeln("Objective;" + cplex.getObjValue());
+outFile.writeln("Lower Bound;" + cplex.getBestObjValue());
+outFile.writeln("Gap;" + cplex.getMIPRelativeGap());
 
 // file header
 outFile.writeln("Vehicle;Orig;Dest;xStart;yStart;xStop;yStop;Load");
