@@ -21,6 +21,7 @@ tuple speedVcr{
   float vcr;
 }
 
+// al the node from dataset
 {Node} Nodes = ...;
 // set of customers
 {Node} N = {n | n in Nodes: n.Type == "c"};
@@ -63,15 +64,16 @@ range Vehicles = 1..K;
 {Node} Fcloned;
 
 // add cloned station 
-// s0 copy 1-4, s1 copy 1-4, s7 copy 1-4
 int copies = 0;
+// in order to manage the number of clones, 1 = one clone for each station, 2 ... 
+int numberOfClones = 1;
 execute{
   for( var i in rF){
     copies = 0;
-	  for(var k in Vehicles){
+	  for(var k in numberOfClones){
 	    copies = copies + 1;
 	    Opl.item(F, i).StringID = Opl.item(F, i).StringID.substring(0,3);
-	    Opl.item(F, i).StringID = Opl.item(F, i).StringID + " - copy " + copies;    
+	    Opl.item(F, i).StringID = Opl.item(F, i).StringID + "_clone" + copies;    
 	  	Fcloned.add(Opl.item(F, i));
 	  }
   }  
@@ -79,19 +81,19 @@ execute{
 
 // all the vertex afther adding cloned stations 
 {Node} V = {n | n in Nodes: n.Type == "d"} union {n | n in Nodes: n.Type == "c"};
-int v;
+int numberOfVertex;
 execute{
   // add all the clones
   V.add(Fcloned);
   
   // add depot (n+1) in the last position return node
-  Opl.item(D, 0).StringID = Opl.item(D, 0).StringID + "-{n+1}";
+  Opl.item(D, 0).StringID = Opl.item(D, 0).StringID + "_{n+1}";
   V.add(D);
-  v = V.size;
+  numberOfVertex = V.size;
 }
 
 // depot (0) - customers(N) -  cloned stations (F') - depot(n+1)
-range rangeVertex = 0..v-1;
+range rangeVertex = 0..numberOfVertex-1;
 
 // array element with all the data for all nodes 
 int demand[rangeVertex];
@@ -145,19 +147,19 @@ execute{
 // variables,constraints and optimization
 
 // number of nodes without start depot
-range rangeVertexWithoutZ = 1..v-1;
+range rangeVertexWithoutZ = 1..numberOfVertex-1;
 
 // number of nodes (start node + customer) 
 range rangeN0 = 0..numberOfCustomer;
 
 // number of node without depot and n+1 (all the customers and all clones )
-range rangeCustomerStation = 1..v-2;
+range rangeCustomerStation = 1..numberOfVertex-2;
 
 // range of customers
 range rangeCustomers = 1..numberOfCustomer;
 
 // range of stations including the clones 
-range rangeStations = numberOfCustomer+1..v-2;
+range rangeStations = numberOfCustomer+1..numberOfVertex-2;
 
 // load variables
 dvar int+ load[i in rangeVertex][k in Vehicles] in 0..C;
@@ -181,45 +183,32 @@ dvar float Obj;
 float B = 1000;
 
 // big-M for time window Mij = max {0, bi + Si + Tij - aj} slide(90) problem  with different speeds
-float M[rangeVertex][rangeVertex];
-execute{
-  for(var i in rangeVertex){
-	  for(var j in rangeVertex){
-	    if(i != v-1 && j != 0 && i != j){
-	    	M[i][j] = 100000;  
-     	}	      
-	  } 
-  }	  
-}
+float M = 100000;
 
 
 minimize Obj;
 subject to {
   
-  	//sum(i in rangeVertex,j in rangeVertex, k in Vehicles:i != v-1 && i != j && j != 0)(load[j][k]*lcr*Dist[i][j]) 
-					//	+ sum(i in rangeVertex, j in rangeVertex,k in Vehicles: i != v-1 && i != j && j != 0)(Dist[i][j]*vcr*x[i][j][k]) 
-					//	+  
-					
-	Objective: Obj == sum(i in rangeVertex,j in rangeVertex, k in Vehicles:i != v-1 && i != j && j != 0)(load[j][k]*lcr*Dist[i][j])
-			+ sum(i in rangeVertex, j in rangeVertex,s in rangeSpeeds: i != v-1 && i != j && j != 0)(Dist[i][j]*vcr[s]*velocity[i][j][s])
-			+ sum(i in rangeVertex, j in rangeVertex: i!=j && i!=v-1 && j!=0) (Dist[i][j]*sum(k in Vehicles)(x[i][j][k]));
+	Objective: Obj == sum(i in rangeVertex,j in rangeVertex, k in Vehicles:i != numberOfVertex-1 && i != j && j != 0)(load[j][k]*lcr*Dist[i][j])
+			+ sum(i in rangeVertex, j in rangeVertex,s in rangeSpeeds: i != numberOfVertex-1 && i != j && j != 0)(Dist[i][j]*vcr[s]*velocity[i][j][s])
+			+ sum(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0) (Dist[i][j]*sum(k in Vehicles)(x[i][j][k]));
 	
 	//
-	forall(i in rangeVertex, j in rangeVertex: i!=j && i!=v-1 && j!=0){
+	forall(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0){
 	  chooseVelocity: sum(s in rangeSpeeds) velocity[i][j][s] == sum(k in Vehicles) x[i][j][k];
 	}
 	
 	// Apart from the depot each city must be visited only once;
 	forall (j in rangeCustomers)
-	  VisitAllCustomers: sum(k in Vehicles, i in rangeVertex: i!=j && i!= v-1) (x[i][j][k]) == 1;
+	  VisitAllCustomers: sum(k in Vehicles, i in rangeVertex: i!=j && i!= numberOfVertex-1) (x[i][j][k]) == 1;
 	  
 	// station visited   
 	forall (j in rangeStations)
-	  VisitedStations: sum(k in Vehicles, i in rangeVertex: i!=j && i!= v-1) (x[i][j][k]) <= 1;
+	  VisitedStations: sum(k in Vehicles, i in rangeVertex: i!=j && i!= numberOfVertex-1) (x[i][j][k]) <= 1;
 	
 	// If a vehicle travels to a city or a station it must also leaves from there;
 	forall (i in rangeCustomerStation, k in Vehicles)
-	  FlowConservation: sum(j in rangeVertex: j!=i && j!= 0) (x[i][j][k]) == sum(j in rangeVertex: j!=i && j!= v-1)(x[j][i][k]);
+	  FlowConservation: sum(j in rangeVertex: j!=i && j!= 0) (x[i][j][k]) == sum(j in rangeVertex: j!=i && j!= numberOfVertex - 1)(x[j][i][k]);
 	  
 	
 	forall(k in Vehicles){
@@ -227,20 +216,20 @@ subject to {
 	  LeaveDepot: sum(j in rangeCustomerStation)x[0][j][k] <= 1;
 	  
 	  //and if it exit it must return 
-	  EnterDepot: sum(j in rangeCustomerStation)x[0][j][k] - sum(i in rangeCustomerStation)x[i][v-1][k] == 0;	  
+	  EnterDepot: sum(j in rangeCustomerStation)x[0][j][k] - sum(i in rangeCustomerStation)x[i][numberOfVertex - 1][k] == 0;	  
 	}
 	  
 	// Subtour elimination;
-	forall(i in rangeVertex, j in rangeVertex, k in Vehicles: j != i && i!= v-1 && j!=0  && demand[i]+demand[j]<=C)  
+	forall(i in rangeVertex, j in rangeVertex, k in Vehicles: j != i && i!= numberOfVertex-1 && j!=0  && demand[i] + demand[j]<=C)  
 	  SE: load[j][k] - load[i][k] + C * x[i][j][k] <= C - demand[i] * x[i][j][k];
 	    
 	// arrival time at nodes from customers 
 	forall (i in rangeN0, j in rangeVertex ,k in Vehicles: i != j && j != 0)
-	  ArrivalTime: w[j][k] >= w[i][k] + serviceTime[i] + sum(s in rangeSpeeds) ((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M[i][j] * (1 - x[i][j][k]);
+	  ArrivalTime: w[j][k] >= w[i][k] + serviceTime[i] + sum(s in rangeSpeeds) ((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
 	  
 	// arrival time at nodes from stations
 	forall(i in rangeStations, j in rangeVertex ,k in Vehicles : i != j && j != 0)
-	  ArrivalTimeBattery: w[j][k] >= w[i][k] + G*(Q - z[i][k]) + sum(s in rangeSpeeds) ((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M[i][j] * (1 - x[i][j][k]);
+	  ArrivalTimeBattery: w[j][k] >= w[i][k] + G*(Q - z[i][k]) + sum(s in rangeSpeeds) ((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
 	  
 	// Time windows constraints
 	forall(i in rangeVertex, k in Vehicles){
@@ -255,15 +244,13 @@ subject to {
 	}
 	
 	// start with max battery charge
-	forall(k in Vehicles){
+	forall(k in Vehicles)
 	  BatteryStart: z[0][k] == Q;
-	}
 	
 	// the source is the depot or a customer and the destination is a customer
 	forall(i in rangeN0,j in rangeCustomerStation, k in Vehicles: i != j){
 	  BatteryCustomer2Customer: z[i][k] - z[j][k] >= sum(s in rangeSpeeds) (Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
-	//sum(s in rangeSpeeds) (Dist[i][j]* vcr[s] * velocity[i][j][s])
 	
 	// the source is the depot or a customer and the destination is a charging station
 	forall(i in rangeN0,j in rangeStations, k in Vehicles:  i != j){
@@ -277,12 +264,12 @@ subject to {
 	
 	// the source is a charging station and the destination is the final depot
 	forall(i in rangeStations,k in Vehicles){
-		BatteryStation2Depot: Q - z[v-1][k] >= sum(s in rangeSpeeds) (Dist[i][v-1]* vcr[s] * velocity[i][v-1][s]) + load[v-1][k] * lcr * Dist[i][v-1] - B * (1 - x[i][v-1][k]);
+		BatteryStation2Depot: Q - z[numberOfVertex - 1][k] >= sum(s in rangeSpeeds) (Dist[i][numberOfVertex - 1]* vcr[s] * velocity[i][numberOfVertex -1][s]) + load[numberOfVertex-1][k] * lcr * Dist[i][numberOfVertex-1] - B * (1 - x[i][numberOfVertex-1][k]);
 	}
 	
 	// the source is a customer and the destination is the final depot
 	forall(i in rangeCustomers, k in Vehicles){
-	  BatteryCustomer2Depot: z[i][k] - z[v-1][k] >= sum(s in rangeSpeeds) (Dist[i][v-1]* vcr[s] * velocity[i][v-1][s]) + load[v-1][k] * lcr * Dist[i][v-1] - B * (1 - x[i][v-1][k]);
+	  BatteryCustomer2Depot: z[i][k] - z[numberOfVertex - 1][k] >= sum(s in rangeSpeeds) (Dist[i][numberOfVertex - 1]* vcr[s] * velocity[i][numberOfVertex-1][s]) + load[numberOfVertex-1][k] * lcr * Dist[i][numberOfVertex-1] - B * (1 - x[i][numberOfVertex-1][k]);
 	}
 }
 
