@@ -35,7 +35,7 @@ C = 200;
 K = 4; 
 // velocity of vehicles and consumption rate
 speedsVcr = {
-< 1 0.2>
+< 40 0.2>
 < 60 0.5>
 < 70 0.8>
 };

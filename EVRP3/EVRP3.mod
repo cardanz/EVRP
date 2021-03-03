@@ -187,12 +187,6 @@ execute{
 	  for(var j in rangeVertex){
 	    if(i != v-1 && j != 0 && i != j){
 	    	M[i][j] = 100000;  
-	    	// perch� dipende dalla velocit� e non posso farci nulla
-	    	//M[i][j] = 0;
-	    	//if(dueDate[i] + serviceTime[i] + Dist[i][j]/speeds - readyTime[j] > 0 && Dist[i][j] != 0){
-	      		// if bi + Si + Tij - aj is greater than 0 we rewrite M[i][j]
-	      	//	M[i][j] = dueDate[i] + serviceTime[i] + Dist[i][j]/speeds - readyTime[j];
-	      	//}
      	}	      
 	  } 
   }	  
@@ -205,7 +199,10 @@ subject to {
   	//sum(i in rangeVertex,j in rangeVertex, k in Vehicles:i != v-1 && i != j && j != 0)(load[j][k]*lcr*Dist[i][j]) 
 					//	+ sum(i in rangeVertex, j in rangeVertex,k in Vehicles: i != v-1 && i != j && j != 0)(Dist[i][j]*vcr*x[i][j][k]) 
 					//	+  
-	Objective: Obj == sum(i in rangeVertex, j in rangeVertex: i!=j && i!=v-1 && j!=0) (Dist[i][j]*sum(k in Vehicles)(x[i][j][k]));
+					
+	Objective: Obj == sum(i in rangeVertex,j in rangeVertex, k in Vehicles:i != v-1 && i != j && j != 0)(load[j][k]*lcr*Dist[i][j])
+			+ sum(i in rangeVertex, j in rangeVertex,s in rangeSpeeds: i != v-1 && i != j && j != 0)(Dist[i][j]*vcr[s]*velocity[i][j][s])
+			+ sum(i in rangeVertex, j in rangeVertex: i!=j && i!=v-1 && j!=0) (Dist[i][j]*sum(k in Vehicles)(x[i][j][k]));
 	
 	//
 	forall(i in rangeVertex, j in rangeVertex: i!=j && i!=v-1 && j!=0){
@@ -230,15 +227,9 @@ subject to {
 	  LeaveDepot: sum(j in rangeCustomerStation)x[0][j][k] <= 1;
 	  
 	  //and if it exit it must return 
-	  EnterDepot: sum(j in rangeCustomerStation)x[0][j][k] - sum(i in rangeCustomerStation)x[i][v-1][k] == 0;
-	  
-	  /*
-	  // max load 
-	  Capacity: sum(i in rangeVertex, j in rangeCustomerStation: j!=i)(demand[j]*x[i][j][k]) <= C;
-	  */
+	  EnterDepot: sum(j in rangeCustomerStation)x[0][j][k] - sum(i in rangeCustomerStation)x[i][v-1][k] == 0;	  
 	}
 	  
-	
 	// Subtour elimination;
 	forall(i in rangeVertex, j in rangeVertex, k in Vehicles: j != i && i!= v-1 && j!=0  && demand[i]+demand[j]<=C)  
 	  SE: load[j][k] - load[i][k] + C * x[i][j][k] <= C - demand[i] * x[i][j][k];
@@ -278,7 +269,6 @@ subject to {
 	forall(i in rangeN0,j in rangeStations, k in Vehicles:  i != j){
 	  BatteryCustomer2Station: z[i][k] >= sum(s in rangeSpeeds) (Dist[i][j]* vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
 	}
-	
 	
 	// the source is a charging station and the destination is a customer
 	forall(i in rangeStations, j in rangeCustomers,k in Vehicles){
