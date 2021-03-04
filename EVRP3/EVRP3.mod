@@ -130,7 +130,7 @@ execute{
 // distance matrix
 float Dist[rangeVertex][rangeVertex];
 // in order to avoid autolinks
-float maxx = 100000;
+float maxx = 0;
 execute{
   for(var i in rangeVertex){
 	  for(var j in rangeVertex){
@@ -185,6 +185,9 @@ dvar boolean velocity[rangeVertex][rangeVertex][rangeSpeeds];
 
 // objective variable
 dvar float Obj;
+dvar float EnergiaCarico;
+dvar float EnergiaVelocita;
+dvar float Distanza;
 
 // big B for battery 
 float B = 10000;
@@ -197,9 +200,10 @@ float M = 100000;
 minimize Obj;
 subject to {
   
-	Objective: Obj == sum(i in rangeVertex, j in rangeVertex, k in Vehicles: i != numberOfVertex-1 && i != j && j != 0)(load[j][k] * lcr * Dist[i][j])
-			+ sum(i in rangeVertex, j in rangeVertex, s in rangeSpeeds: i != numberOfVertex-1 && i != j && j != 0)(Dist[i][j] * vcr[s] * velocity[i][j][s])
-			+ sum(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0) (Dist[i][j] * sum(k in Vehicles)(x[i][j][k]));
+	Objective: Obj == EnergiaCarico + EnergiaVelocita + Distanza;
+	EnergiaCarico == sum(i in rangeVertex, j in rangeVertex, k in Vehicles: i != numberOfVertex-1 && i != j && j != 0)(load[j][k] * lcr * Dist[i][j]);
+	EnergiaVelocita ==  sum(i in rangeVertex, j in rangeVertex, s in rangeSpeeds: i != numberOfVertex-1 && i != j && j != 0)(Dist[i][j] * vcr[s] * velocity[i][j][s]);
+	Distanza == sum(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0) (Dist[i][j] * sum(k in Vehicles)(x[i][j][k]));
 	
 	// constraint for choose the velocity on the arc 
 	forall(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0){
@@ -294,13 +298,18 @@ outFile.writeln("Lower Bound;" + cplex.getBestObjValue());
 outFile.writeln("Gap;" + cplex.getMIPRelativeGap());
 
 // file header
-outFile.writeln("Vehicle;Orig;Dest;xStart;yStart;xStop;yStop;Load");
+outFile.writeln("Vehicle;Orig;Dest;xStart;yStart;xStop;yStop;Load;Arr_i;Arr_j;Ready;Due;Speed;Dist;Time;Z_i;Z_j;vcr");
 
 for (var v in Vehicles){
  for (var j in rangeVertex){
    for(var i in rangeVertex){ 
-    if(i!=j && x[i][j][v]>=0.999){   	 
-   	  outFile.writeln(v,";",Opl.item(V,i).StringID,";",Opl.item(V,j).StringID,";",Opl.item(V,i).x,";",Opl.item(V,i).y,";",Opl.item(V,j).x,";",Opl.item(V,j).y,";",load[j][v]);
+    if(i!=j && x[i][j][v]>=0.999){  
+      for(var s in rangeSpeeds){ 	 
+       if(velocity[i][j][s]>=0.999){
+   	  outFile.writeln(v,";",Opl.item(V,i).StringID,";",Opl.item(V,j).StringID,";",Opl.item(V,i).x,";",Opl.item(V,i).y,";",Opl.item(V,j).x,";",Opl.item(V,j).y,";",load[j][v],
+   	  ";",w[i][v],";",w[j][v],";",readyTime[j],";",dueDate[j],";",speeds[s],";",Dist[i][j],";",Dist[i][j]/speeds[s],";",z[i][v],";",z[j][v],";",vcr[s]);
+    }   	  
+    }   	  
     }                        
    }      
  }
