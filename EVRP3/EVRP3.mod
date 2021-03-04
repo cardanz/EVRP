@@ -205,6 +205,13 @@ subject to {
 	EnergiaVelocita ==  sum(i in rangeVertex, j in rangeVertex, s in rangeSpeeds: i != numberOfVertex-1 && i != j && j != 0)(Dist[i][j] * vcr[s] * velocity[i][j][s]);
 	Distanza == sum(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0) (Dist[i][j] * sum(k in Vehicles)(x[i][j][k]));
 	
+	//avoid avoid useless paths
+	forall(i in rangeVertex, j in rangeVertex, k in Vehicles){
+	  if(Dist[i][j] == 0){
+	    x[i][j][k] == 0;
+	  }
+	}
+	
 	// constraint for choose the velocity on the arc 
 	forall(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0){
 	  chooseVelocity: sum(s in rangeSpeeds) velocity[i][j][s] == sum(k in Vehicles) x[i][j][k];
