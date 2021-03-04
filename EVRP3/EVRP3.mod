@@ -40,7 +40,7 @@ int numberOfStation;
 // number of velocity
 int  numberOfVelocity;
 // in order to manage the number of clones, 1 = one clone for each station, 2 ... 
-int numberOfClones = 2;
+int numberOfClones = 1;
 range rangeNumberOfClones = 1..numberOfClones;
 // number of total vertex
 int numberOfVertex;
@@ -184,11 +184,15 @@ dvar float+ z[rangeVertex][Vehicles];
 // velocity choosen in arc (i,j) from the vector of speeds
 dvar boolean velocity[rangeVertex][rangeVertex][rangeSpeeds];
 
+// recharged 
+dvar float+ recharge[rangeStations][Vehicles];
+
 // objective variable
 dvar float Obj;
-dvar float EnergiaCarico;
-dvar float EnergiaVelocita;
-dvar float Distanza;
+dvar float energiaCarico;
+dvar float energiaVelocita;
+dvar float energiaRicaricata;
+dvar float distanza;
 
 // big B for battery 
 float B = 10000;
@@ -201,10 +205,11 @@ float M = 100000;
 minimize Obj;
 subject to {
   
-	Objective: Obj == EnergiaCarico + EnergiaVelocita + Distanza;
-	EnergiaCarico == sum(i in rangeVertex, j in rangeVertex, k in Vehicles: i != numberOfVertex-1 && i != j && j != 0)(load[j][k] * lcr * Dist[i][j]);
-	EnergiaVelocita ==  sum(i in rangeVertex, j in rangeVertex, s in rangeSpeeds: i != numberOfVertex-1 && i != j && j != 0)(Dist[i][j] * vcr[s] * velocity[i][j][s]);
-	Distanza == sum(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0) (Dist[i][j] * sum(k in Vehicles)(x[i][j][k]));
+	Objective: Obj == energiaRicaricata + energiaVelocita+ distanza;
+	energiaRicaricata == sum (j in rangeStations, k in Vehicles) recharge[j][k];
+	energiaVelocita ==  sum(i in rangeVertex, j in rangeVertex, s in rangeSpeeds: i != numberOfVertex-1 && i != j && j != 0)(Dist[i][j] * vcr[s] * velocity[i][j][s]);
+	
+	distanza == sum(i in rangeVertex, j in rangeVertex: i!=j && i!=numberOfVertex-1 && j!=0) (Dist[i][j] * sum(k in Vehicles)(x[i][j][k]));
 	
 	//avoid avoid useless paths
 	forall(i in rangeVertex, j in rangeVertex, k in Vehicles){
@@ -249,7 +254,7 @@ subject to {
 	  
 	// Arrival time at nodes from stations
 	forall(i in rangeStations, j in rangeVertex, k in Vehicles : i != j && j != 0)
-	  arrivalTimeBattery: w[j][k] >= w[i][k] + G*(Q - z[i][k]) + sum(s in rangeSpeeds)((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
+	  arrivalTimeBattery: w[j][k] >= w[i][k] + G*(recharge[i][k]) + sum(s in rangeSpeeds)((Dist[i][j]/speeds[s]) * velocity[i][j][s]) - M * (1 - x[i][j][k]);
 	  
 	// Time windows constraints
 	forall(i in rangeVertex, k in Vehicles){
@@ -267,7 +272,12 @@ subject to {
 	// the battery at node 0 is the maximum
 	forall(k in Vehicles)
 	  batteryStart: z[0][k] == Q;
-	
+	  
+	// value recharged on the station
+	forall(i in rangeN0, j in rangeStations, k in Vehicles:  i != j){
+	  rechargeConst: recharge[j][k] >= Q - z[i][k] + sum(s in rangeSpeeds)(Dist[i][j] * vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
+	}
+	// 0-9 79.69 - 79.69 + 
 	// The source is the depot or a customer and the destination is a customer
 	forall(i in rangeN0, j in rangeCustomerStation, k in Vehicles: i != j){
 	  batteryCustomer2Customer: z[i][k] - z[j][k] >= sum(s in rangeSpeeds)(Dist[i][j] * vcr[s] * velocity[i][j][s]) + load[j][k] * lcr * Dist[i][j] - B * (1 - x[i][j][k]);
