@@ -40,7 +40,8 @@ int numberOfStation;
 // number of velocity
 int  numberOfVelocity;
 // in order to manage the number of clones, 1 = one clone for each station, 2 ... 
-int numberOfClones = 1;
+int numberOfClones = 2;
+range rangeNumberOfClones = 1..numberOfClones;
 // number of total vertex
 int numberOfVertex;
 
@@ -73,7 +74,7 @@ int copies = 0;
 execute{
   for( var i in rF){
     copies = 0;
-	  for(var k in numberOfClones){
+	  for(var k in rangeNumberOfClones){
 	    copies = copies + 1;
 	    Opl.item(F, i).StringID = Opl.item(F, i).StringID.substring(0,3);
 	    Opl.item(F, i).StringID = Opl.item(F, i).StringID + "_clone" + copies;    
